@@ -28,7 +28,7 @@ class TicTacToe(Game):
             **contexts_ids,
             min_new_tokens=10,
             max_new_tokens=20,
-            suppress_tokens=[198, 628, 50256],
+            suppress_tokens=[198, 628],
             do_sample=True,
         )
         thoughts = tokenizer.batch_decode(thoughts_ids)
@@ -45,7 +45,7 @@ class TicTacToe(Game):
             **extended_contexts_ids,
             min_new_tokens=1,
             max_new_tokens=5,
-            suppress_tokens=[198, 628, 50256],
+            suppress_tokens=[198, 628],
             do_sample=True,
         )
         actions = tokenizer.batch_decode(action_ids)

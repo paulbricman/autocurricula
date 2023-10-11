@@ -8,7 +8,7 @@ class Game(ABC):
         self, model, tokenizer, history: List[List[Tuple[List[Tuple[str, str]], str]]]
     ):
         """
-        You woke up from amnesia. You're in the middle of a game. `history` contains
+        You woke up from amnesia. You're in the middle of a game. `history` includes
         past actions. You think through the game step and eventually produce an action.
 
         Args:
