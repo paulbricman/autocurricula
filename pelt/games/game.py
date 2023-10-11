@@ -4,16 +4,20 @@ from typing import List, Tuple
 
 class Game(ABC):
     @abstractmethod
-    def act(self, model, history: List[List[Tuple[List[Tuple[str, str]], str]]]):
+    def act(
+        self, model, tokenizer, history: List[List[Tuple[List[Tuple[str, str]], str]]]
+    ):
         """
-        You woke up from amnesia. You're in the middle of a game.
-        `history` contains past actions. You think through the game step and eventually produce an action.
+        You woke up from amnesia. You're in the middle of a game. `history` contains
+        past actions. You think through the game step and eventually produce an action.
 
         Args:
+            model: `transformers` or `peft`-wrapped model
+            tokenizer: `transformers` tokenizer used by model
             history: past actions and associated trains of thought (B x [T x (E x [(context, thought)], action)]).
 
         Returns:
-            Yet another (context, thought, action) triple.
+            Yet another (E x [context, thought], action) triple.
         """
         pass
 

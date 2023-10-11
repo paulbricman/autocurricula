@@ -61,7 +61,7 @@ def test_preprocess():
     game = TicTacToe()
 
     history = action_ints_to_history([[0, 6, 1, 7, 3, 8]])
-    contexts = game.preprocess(history)
+    contexts = game._preprocess(history)
     assert isinstance(contexts[0], str)
 
 

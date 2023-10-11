@@ -7,10 +7,21 @@ import numpy as np
 
 
 class TicTacToe(Game):
-    def act(
-        self, model, tokenizer, history: List[List[Tuple[List[Tuple[str, str]], str]]]
-    ):
-        contexts = self.preprocess(history)
+    def act(self, model, tokenizer, history):
+        """
+        Given the history of the game, and a model and tokenizer, use the former to
+        prompt the latter two to produce an intermediate reasoning trace and an action.
+
+        Args:
+            model: `transformers` or `peft`-wrapped model
+            tokenizer: `transformers` tokenizer used by model
+            history: past actions and associated trains of thought (B x [T x (E x [(context, thought)], action)]).
+
+        Returns:
+            Yet another ([(context, thought), (extended_context, action)], action) triple.
+        """
+        # First, work towards generating a reasoning trace.
+        contexts = self._preprocess(history)
         contexts_ids = tokenizer(contexts, return_tensors="pt")
 
         thoughts_ids = model.generate(
@@ -22,6 +33,7 @@ class TicTacToe(Game):
         )
         thoughts = tokenizer.batch_decode(thoughts_ids)
 
+        # Second, use the reasoning trace to work towards an action.
         extended_contexts = [
             e + "...\n\nFinally, provide your intended action:" for e in thoughts
         ]
@@ -38,6 +50,7 @@ class TicTacToe(Game):
         )
         actions = tokenizer.batch_decode(action_ids)
 
+        # Package things up nicely into experiences.
         trimmed_thoughts = []
         trimmed_actions = []
         for context, extended_context, thought, action in zip(
@@ -53,7 +66,7 @@ class TicTacToe(Game):
         experiences = list(zip(context_actions, trimmed_actions))
         return experiences
 
-    def preprocess(self, history: List[List[Tuple[List[Tuple[str, str]], str]]]):
+    def _preprocess(self, history: List[List[Tuple[List[Tuple[str, str]], str]]]):
         def preprocess_timeline(timeline):
             # For each timeline, determine the latest context.
             # History was previously `eval`-ed, so all legal.
@@ -144,6 +157,7 @@ class TicTacToe(Game):
 
         return [eval_timeline(timeline) for timeline in history]
 
+    # From PettingZoo game page:
     description = """Tic-tac-toe is a simple turn based strategy game where 2 players, X and O, take turns marking spaces on a 3 x 3 grid. The first player to place 3 of their marks in a horizontal, vertical, or diagonal line is the winner.
 
 Each action from 0 to 8 represents placing either an X or O in the corresponding cell. The cells are indexed as follows:
