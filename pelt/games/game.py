@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple
+from itertools import compress
 
 
 class Game(ABC):
@@ -34,3 +35,37 @@ class Game(ABC):
             If the game should continue, returns `None`. Otherwise, returns list of player scores.
         """
         pass
+
+    def play(self, model, adapters, tokenizer, config):
+        # TODO: Consider replacing Game with play for game-specific custom logic.
+        batch_size = config["batch_size"]
+        history = [[]] * batch_size
+        evals = [()] * batch_size
+        active_timelines_mask = [True] * batch_size
+
+        while any(active_timelines_mask):
+            current_player = (len(history[0]) - 1) % 2
+            current_adapter = adapters[current_player]
+            current_model = model.set_adapter(current_adapter)
+
+            # Only act in active timelines.
+            active_timelines = list(compress(history, active_timelines_mask))
+
+            # Keep track of stepped timelines so as to know how to put them back among others.
+            active_timeline_idx = list(
+                compress(range(len(active_timelines_mask)), active_timelines_mask)
+            )
+
+            # Step through active timelines and add them back.
+            recent_timelines = self.act(current_model, tokenizer, active_timelines)
+            recent_evals = self.eval(recent_timelines)
+            for id, recent_timeline, recent_eval in zip(
+                active_timeline_idx, recent_timelines, recent_evals
+            ):
+                history[id] = recent_timeline
+                evals[id] = recent_eval
+
+            # Active timelines are those where no non-zero scores have yet been assigned.
+            active_timelines_mask = [not any(e) for e in evals]
+
+        return history, evals
