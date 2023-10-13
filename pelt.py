@@ -17,6 +17,5 @@ import torch
 import os
 
 
-def train(model, tokenizer, game, config):
-    
-    
+def league(base_model, tokenizer, play, config):
+    pass
