@@ -6,6 +6,17 @@ from itertools import compress
 
 
 def play(models, tokenizer, config):
+    """
+    Given a list of players and a tokenizer, return the outcomes of the game (i.e. evals, history).
+
+    Args:
+        models: list of `peft`-wrapped models
+        tokenizer: `transformers` tokenizer used by model
+        config: standard config dict ("game" subdict most relevant)
+
+    Returns:
+        Tuple of evals and play history.
+    """
     batch_size = config["game"]["batch_size"]
     history = [[] for _ in range(batch_size)]
     evals = [() for _ in range(batch_size)]
@@ -114,6 +125,11 @@ def act(model, tokenizer, history):
 
 
 def preprocess(history):
+    """
+    Helper function to put together prompt header for TicTacToe.
+    It involves rewinding the game for each timeline, string templating.
+    """
+
     def preprocess_timeline(timeline):
         # For each timeline, determine the latest context.
         # History was previously `eval`-ed, so all legal.
@@ -136,7 +152,7 @@ def preprocess(history):
             env.step(action)
 
         def obs_to_board_string(obs):
-            # TicTacToe env lacks ansi render.
+            # TicTacToe env lacks native ansi render.
             symbols = ["X", "O"]
             obs = np.swapaxes(obs["observation"], 0, 1)
 
@@ -168,6 +184,10 @@ def preprocess(history):
 
 
 def eval(history):
+    """
+    Given play history, return player evals.
+    """
+
     def eval_timeline(timeline):
         last_move_player = (len(timeline) - 1) % 2
         action_strings = [step["action"] for step in timeline]

@@ -1,7 +1,10 @@
 import random
 
 
-def league_entry(generation, config):
+def league_entry(generation, _):
+    """
+    Default league training entry logic by generation.
+    """
     entrants = [
         {
             "role": "main_agent",
@@ -26,6 +29,9 @@ def league_entry(generation, config):
 
 
 def league_match(league, generation, config):
+    """
+    Default league training matchmaking logic by generation.
+    """
     main_agents = [p for p in league if p["role"] == "main_agent"]
     latest_main_agent = [p for p in main_agents if p["generation"] == generation][0]
 
