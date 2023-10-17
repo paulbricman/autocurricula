@@ -1,5 +1,6 @@
 from pelt.games.tictactoe import play, act, eval, preprocess
 from pelt.games.utils import action_ints_to_history
+from pelt.defaults import default_config
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import pytest
 from ml_collections.config_dict import ConfigDict
@@ -23,7 +24,7 @@ def tokenizer():
 
 @pytest.fixture
 def config():
-    return ConfigDict({"play": {"batch_size": 2}})
+    return default_config()
 
 
 def test_eval():

@@ -6,7 +6,7 @@ from itertools import compress
 
 
 def play(models, tokenizer, config):
-    batch_size = config["play"]["batch_size"]
+    batch_size = config["game"]["batch_size"]
     history = [[] for _ in range(batch_size)]
     evals = [() for _ in range(batch_size)]
     active_timelines_mask = [True for _ in range(batch_size)]
@@ -113,7 +113,7 @@ def act(model, tokenizer, history):
     return actions
 
 
-def preprocess(history: List[List[Tuple[List[Tuple[str, str]], str]]]):
+def preprocess(history):
     def preprocess_timeline(timeline):
         # For each timeline, determine the latest context.
         # History was previously `eval`-ed, so all legal.
@@ -167,7 +167,7 @@ def preprocess(history: List[List[Tuple[List[Tuple[str, str]], str]]]):
     return [preprocess_timeline(timeline) for timeline in history]
 
 
-def eval(history: List[List[Tuple[List[Tuple[str, str]], str]]]):
+def eval(history):
     def eval_timeline(timeline):
         last_move_player = (len(timeline) - 1) % 2
         action_strings = [step["action"] for step in timeline]
