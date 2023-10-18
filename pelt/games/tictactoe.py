@@ -3,16 +3,18 @@ from typing import List, Tuple
 from pettingzoo.classic import tictactoe_v3
 import numpy as np
 from itertools import compress
+import json
 
 
-def play(models, tokenizer, config):
+def play(model, match, tokenizer, config):
     """
     Given a list of players and a tokenizer, return the outcomes of the game (i.e. evals, history).
 
     Args:
-        models: list of `peft`-wrapped models
+        model: peft-wrapped model backbone
+        match: list of player dicts
         tokenizer: `transformers` tokenizer used by model
-        config: standard config dict ("game" subdict most relevant)
+        config: standard config dict ("game" subdict being most relevant)
 
     Returns:
         Tuple of evals and play history.
@@ -23,8 +25,13 @@ def play(models, tokenizer, config):
     active_timelines_mask = [True for _ in range(batch_size)]
 
     while any(active_timelines_mask):
-        current_player = len(history[0]) % 2
-        current_model = models[current_player]
+        current_player_id = len(history[0]) % 2
+        current_player = match[current_player_id]
+
+        if isinstance(current_player, dict):
+            current_player = json.dumps(current_player)
+
+        model.set_adapter(current_player)
 
         # Only act in active timelines.
         active_timelines = list(compress(history, active_timelines_mask))
@@ -35,7 +42,7 @@ def play(models, tokenizer, config):
         )
 
         # Step through active timelines and add them back.
-        recent_timelines = act(current_model, tokenizer, active_timelines)
+        recent_timelines = act(model, tokenizer, active_timelines)
         for id, recent_timeline in enumerate(recent_timelines):
             active_timelines[id] += [recent_timeline]
 
@@ -51,7 +58,7 @@ def play(models, tokenizer, config):
 
 def act(model, tokenizer, history):
     """
-    Given the history of the game, and a model and tokenizer, produce an intermediate reasoning trace and an action.
+    Given the history of the game, a model, and a tokenizer, produce an intermediate reasoning trace and an action.
 
     Args:
         model: `transformers` or `peft`-wrapped model
@@ -59,7 +66,7 @@ def act(model, tokenizer, history):
         history: past actions and associated trains of thought (B x [T x (E x [(context, thought)], action)]).
 
     Returns:
-        Yet another ([(context, thought), (extended_context, action)], action) triple.
+        Yet another ([(context, thought), (extended_context, action)], action) object.
     """
     # First, work towards generating a reasoning trace.
     contexts = preprocess(history)
@@ -185,7 +192,7 @@ def preprocess(history):
 
 def eval(history):
     """
-    Given play history, return player evals.
+    Given play history, compute player evals.
     """
 
     def eval_timeline(timeline):

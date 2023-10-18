@@ -1,30 +1,18 @@
 from pelt.games.tictactoe import play, act, eval, preprocess
 from pelt.games.utils import action_ints_to_history
 from pelt.defaults import default_config
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from pelt.training import get_model_tok
 import pytest
-from ml_collections.config_dict import ConfigDict
-import pprint
-
-
-pp = pprint.PrettyPrinter()
-
-
-@pytest.fixture
-def model():
-    return AutoModelForCausalLM.from_pretrained("distilgpt2")
-
-
-@pytest.fixture
-def tokenizer():
-    tok = AutoTokenizer.from_pretrained("distilgpt2")
-    tok.pad_token = tok.eos_token
-    return tok
 
 
 @pytest.fixture
 def config():
     return default_config()
+
+
+@pytest.fixture
+def model_tok(config):
+    return get_model_tok("facebook/opt-125m", config)
 
 
 def test_eval():
@@ -75,7 +63,8 @@ def test_preprocess():
     assert isinstance(contexts[0], str)
 
 
-def test_act(model, tokenizer):
+def test_act(model_tok):
+    model, tokenizer = model_tok
     history = action_ints_to_history([[0, 6, 1, 7], [0, 6, 1, 7]])
     timelines = act(model, tokenizer, history)
 
@@ -83,7 +72,9 @@ def test_act(model, tokenizer):
     assert len(timelines[0]["thoughts"]) == 2  # two thoughts behind an action
 
 
-def test_play(model, tokenizer, config):
+def test_play(model_tok, config):
+    model, tokenizer = model_tok
+
     # Pretend a toy model is actually two models playing.
-    evals, history = play([model, model], tokenizer, config)
-    assert evals == [(-1, 0), (-1, 0)]
+    evals, history = play(model, ["default", "default"], tokenizer, config)
+    assert evals == [(-1, 0), (-1, 0)]  # at this size, should be illegals

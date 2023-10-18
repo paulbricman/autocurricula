@@ -1,9 +1,12 @@
-from pelt.defaults import league_entry, league_match, default_config
+from pelt.operators import league_entry, league_match
+from pelt.training import get_model_tok
+from pelt.defaults import default_config
 import pytest
-import pprint
 
 
-pp = pprint.PrettyPrinter()
+@pytest.fixture
+def model_tok(config):
+    return get_model_tok("facebook/opt-125m", config)
 
 
 @pytest.fixture
@@ -11,9 +14,10 @@ def config():
     return default_config()
 
 
-def test_league_entry(config):
+def test_league_entry(model_tok, config):
+    model, _ = model_tok
     entrants_by_generation = [
-        league_entry(generation, config) for generation in range(4)
+        league_entry(model, generation, config) for generation in range(4)
     ]
 
     # There's just a new main agent, then also a new main exploiter, then also a new league exploiter.
@@ -22,12 +26,13 @@ def test_league_entry(config):
     assert len(entrants_by_generation[2]) == len(entrants_by_generation[3])
 
 
-def test_league_match(config):
+def test_league_match(model_tok, config):
+    model, _ = model_tok
     league = []
     matches_by_generation = []
 
     for generation in range(3):
-        league += league_entry(generation, config)
+        league += league_entry(model, generation, config)
         matches_by_generation += [league_match(league, generation, config)]
 
     assert all([m == matches_by_generation[0][0] for m in matches_by_generation[0]])
