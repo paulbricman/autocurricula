@@ -1,5 +1,6 @@
 def default_config():
     return {
+        "leaderboard": {"default": 1000},
         "league": {
             "generations": 2,
             "matches": 4,

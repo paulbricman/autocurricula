@@ -2,11 +2,12 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import TaskType, get_peft_model, LoraConfig, PeftModel
 from pelt.operators import league_entry, league_match
 from pelt.defaults import default_config
+from pelt.leaderboard import populate_leaderboard, update_leaderboard
 
 import json
 
 
-def update(league, matches, evals_and_history, config):
+def update(league, matches, evals, history, config):
     return league
 
 
@@ -19,19 +20,25 @@ def train(
     config=default_config(),
 ):
     model, tokenizer = get_model_tok(model_name, config)
-
     league = []
+    leaderboard = {}
+
     for generation in range(config["league"]["generations"]):
         entrants = entry(model, generation, config)
         league += entrants
+
+        leaderboard = populate_leaderboard(leaderboard, entrants, config)
         populate_with_entrant_adapters(model, entrants, config)
+
         matches = match(league, generation, config)
 
         for _ in range(config["league"]["rounds"]):
-            evals_and_history = [
-                play(model, match, tokenizer, config) for match in matches
-            ]
-            league = update(league, matches, evals_and_history, config)
+            evals, history = zip(
+                *[play(model, match, tokenizer, config) for match in matches]
+            )
+
+            leaderboard = update_leaderboard(leaderboard, matches, evals, config)
+            league = update(league, matches, evals, history, config)
 
     return league
 
