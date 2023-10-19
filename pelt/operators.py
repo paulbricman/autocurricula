@@ -73,7 +73,7 @@ def league_match(league, generation, config):
         legal_match_types += [le_matches, ma_le_matches]
 
     matches = []
-    for match_id in range(config["league"]["n_matches"]):
+    for match_id in range(config["league"]["matches"]):
         type = random.choices(
             range(len(legal_match_types)),
             weights=[

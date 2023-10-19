@@ -1,9 +1,38 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import TaskType, get_peft_model, LoraConfig, PeftModel
+from pelt.operators import league_entry, league_match
+from pelt.defaults import default_config
+
 import json
 
 
 def update(league, matches, evals_and_history, config):
+    return league
+
+
+def train(
+    model_name,
+    play,
+    match=league_match,
+    entry=league_entry,
+    update=update,
+    config=default_config(),
+):
+    model, tokenizer = get_model_tok(model_name, config)
+
+    league = []
+    for generation in range(config["league"]["generations"]):
+        entrants = entry(model, generation, config)
+        league += entrants
+        populate_with_entrant_adapters(model, entrants, config)
+        matches = match(league, generation, config)
+
+        for _ in range(config["league"]["rounds"]):
+            evals_and_history = [
+                play(model, match, tokenizer, config) for match in matches
+            ]
+            league = update(league, matches, evals_and_history, config)
+
     return league
 
 

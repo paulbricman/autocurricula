@@ -77,4 +77,6 @@ def test_play(model_tok, config):
 
     # Pretend a toy model is actually two models playing.
     evals, history = play(model, ["default", "default"], tokenizer, config)
-    assert evals == [(-1, 0), (-1, 0)]  # at this size, should be illegals
+    assert evals == [
+        (-1, 0) for b in range(config["game"]["batch_size"])
+    ]  # at this size, should be illegals
