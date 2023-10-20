@@ -1,10 +1,18 @@
-from pelt.training import get_model_tok, populate_with_entrant_adapters, train
+from pelt.training import (
+    get_model_tok,
+    populate_with_entrant_adapters,
+    train,
+    trajectories_by_model,
+)
 from pelt.defaults import default_config
 from pelt.operators import league_entry
 from pelt.games.tictactoe import play
 import pytest
-import pelt
+import pprint
 import json
+
+
+pp = pprint.PrettyPrinter()
 
 
 @pytest.fixture
@@ -51,6 +59,50 @@ def test_populate_with_entrant_adapters(model_tok, config):
     assert [
         json.loads(e) for e in peft_model.peft_config.keys() if e != "default"
     ] == league
+
+
+def test_trajectories_by_model():
+    league = [{"gen": 0}, {"gen": 1}]
+    matches = [
+        ({"gen": 0}, {"gen": 1}),
+        ({"gen": 1}, {"gen": 0}),
+        ({"gen": 1}, {"gen": 1}),
+    ]
+    evals = [[(1, -1)], [(1, -1)], [(-1, 0)]]
+    timeline = [
+        {
+            "thoughts": [
+                {
+                    "context": "Here's the board...",
+                    "behavior": "A good opening would be...",
+                },
+                {
+                    "context": "A good opening would be...",
+                    "behavior": "4",
+                },
+            ]
+        },
+        {
+            "thoughts": [
+                {
+                    "context": "Here's the board...",
+                    "behavior": "A good response would be...",
+                },
+                {
+                    "context": "A good response would be...",
+                    "behavior": "2",
+                },
+            ]
+        },
+    ]
+    history = [timeline, timeline, timeline[:1]]
+    sars = trajectories_by_model(league, matches, evals, history)
+
+    assert sars[json.dumps(league[0])][0] == (
+        "Here's the board...",
+        "A good opening would be...",
+        1,
+    )
 
 
 def test_abstract_train():
