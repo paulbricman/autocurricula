@@ -3,11 +3,16 @@ from peft import TaskType, get_peft_model, LoraConfig, PeftModel
 from pelt.operators import league_entry, league_match
 from pelt.defaults import default_config
 from pelt.leaderboard import populate_leaderboard, update_leaderboard
-
+from trl import PPOConfig
 import json
+import pprint
 
 
-def update(league, matches, evals, history, config):
+def update(model, league, matches, evals, history, config):
+    sars = trajectories_by_model(league, matches, evals, history)
+
+    config = PPOConfig()
+
     return league
 
 
@@ -38,54 +43,54 @@ def train(
             )
 
             leaderboard = update_leaderboard(leaderboard, matches, evals, config)
-            league = update(league, matches, evals, history, config)
+            update(model, league, matches, evals, history, config)
 
     return league
 
 
-def trajectories_by_model(league, matches, evals, history):
+def trajectories_by_model(league, matches, evals, histories):
     sars = {}
     for player in league:
         sars[json.dumps(player)] = []
 
-    for match, eval_timelines, history_timelines in zip(matches, evals, history):
+    for match, eval_timelines, history_timelines in zip(matches, evals, histories):
         p1, p2 = match
 
-        p1_states_actions = [
-            e["thoughts"] for e_idx, e in enumerate(history_timelines) if e_idx % 2 == 0
-        ]
-        p1_states = [[e["context"] for e in f] for f in p1_states_actions]
-        p1_actions = [[e["behavior"] for e in f] for f in p1_states_actions]
+        for eval, history in zip(eval_timelines, history_timelines):
+            p1_states_actions = flatten(
+                [e["thoughts"] for e_idx, e in enumerate(history) if e_idx % 2 == 0]
+            )
+            p1_states = [e["context"] for e in p1_states_actions]
+            p1_actions = [e["behavior"] for e in p1_states_actions]
 
-        p2_states_actions = [
-            e["thoughts"] for e_idx, e in enumerate(history_timelines) if e_idx % 2 == 1
-        ]
-        p2_states = [[e["context"] for e in f] for f in p2_states_actions]
-        p2_actions = [[e["behavior"] for e in f] for f in p2_states_actions]
+            p2_states_actions = flatten(
+                [e["thoughts"] for e_idx, e in enumerate(history) if e_idx % 2 == 1]
+            )
+            p2_states = [e["context"] for e in p2_states_actions]
+            p2_actions = [e["behavior"] for e in p2_states_actions]
 
-        if len(p1_actions):
-            p1_rewards = [
-                [e[0] for _ in range(len(p1_actions[0]))] for e in eval_timelines
+            if len(p1_actions):
+                p1_rewards = [eval[0] for _ in range(len(p1_actions))]
+            else:
+                p1_rewards = []
+
+            if len(p2_actions):
+                p2_rewards = [eval[1] for _ in range(len(p2_actions))]
+            else:
+                p2_rewards = []
+
+            # https://huggingface.co/docs/trl/ppo_trainer#expected-dataset-format
+            new_p1_experiences = [
+                {"query": q, "completion": c, "reward": r}
+                for q, c, r in zip(p1_states, p1_actions, p1_rewards)
             ]
-        else:
-            p1_rewards = []
-
-        if len(p2_actions):
-            p2_rewards = [
-                [e[1] for _ in range(len(p2_states[0]))] for e in eval_timelines
+            new_p2_experiences = [
+                {"query": q, "completion": c, "reward": r}
+                for q, c, r in zip(p2_states, p2_actions, p2_rewards)
             ]
-        else:
-            p2_rewards = []
 
-        p1_states = flatten(p1_states)
-        p1_actions = flatten(p1_actions)
-        p1_rewards = flatten(p1_rewards)
-        p2_states = flatten(p2_states)
-        p2_actions = flatten(p2_actions)
-        p2_rewards = flatten(p2_rewards)
-
-        sars[json.dumps(p1)] += list(zip(p1_states, p1_actions, p1_rewards))
-        sars[json.dumps(p2)] += list(zip(p2_states, p2_actions, p2_rewards))
+            sars[json.dumps(p1)] += new_p1_experiences
+            sars[json.dumps(p2)] += new_p2_experiences
 
     return sars
 
@@ -124,5 +129,6 @@ def get_model_tok(model_name, config):
     peft_model = PeftModel.from_pretrained(model, config["peft"]["path"])
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer.pad_token = tokenizer.eos_token
 
     return peft_model, tokenizer

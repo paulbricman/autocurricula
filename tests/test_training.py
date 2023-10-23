@@ -95,14 +95,14 @@ def test_trajectories_by_model():
             ]
         },
     ]
-    history = [timeline, timeline, timeline[:1]]
+    history = [[timeline], [timeline], [timeline[:1]]]
     sars = trajectories_by_model(league, matches, evals, history)
 
-    assert sars[json.dumps(league[0])][0] == (
+    assert list(sars[json.dumps(league[0])][0].values()) == [
         "Here's the board...",
         "A good opening would be...",
         1,
-    )
+    ]
 
 
 def test_abstract_train():
