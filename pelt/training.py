@@ -1,51 +1,32 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import TaskType, get_peft_model, LoraConfig, PeftModel
 from pelt.operators import league_entry, league_match
 from pelt.defaults import default_config
 from pelt.leaderboard import populate_leaderboard, update_leaderboard
-from trl import PPOConfig
+
+from trl import PPOConfig, PPOTrainer
+from datasets import Dataset
+import torch
+from transformers import AutoTokenizer
+from trl import AutoModelForCausalLMWithValueHead
+
 import json
-import pprint
 
 
-def update(model, league, matches, evals, history, config):
-    sars = trajectories_by_model(league, matches, evals, history)
+def pretok(dataset, tokenizer):
+    def tokenize(sample):
+        sample["query_ids"] = tokenizer.encode(
+            sample["query"], truncation=True, padding="max_length", max_length=16
+        )
+        sample["completion_ids"] = tokenizer.encode(
+            sample["completion"], truncation=True, padding="max_length", max_length=16
+        )
+        return sample
 
-    config = PPOConfig()
-
-    return league
+    return dataset.map(tokenize, batched=False)
 
 
-def train(
-    model_name,
-    play,
-    match=league_match,
-    entry=league_entry,
-    update=update,
-    config=default_config(),
-):
-    model, tokenizer = get_model_tok(model_name, config)
-    league = []
-    leaderboard = {}
-
-    for generation in range(config["league"]["generations"]):
-        entrants = entry(model, generation, config)
-        league += entrants
-
-        leaderboard = populate_leaderboard(leaderboard, entrants, config)
-        populate_with_entrant_adapters(model, entrants, config)
-
-        matches = match(league, generation, config)
-
-        for _ in range(config["league"]["rounds"]):
-            evals, history = zip(
-                *[play(model, match, tokenizer, config) for match in matches]
-            )
-
-            leaderboard = update_leaderboard(leaderboard, matches, evals, config)
-            update(model, league, matches, evals, history, config)
-
-    return league
+def flatten(l):
+    return [item for sublist in l for item in sublist]
 
 
 def trajectories_by_model(league, matches, evals, histories):
@@ -95,13 +76,75 @@ def trajectories_by_model(league, matches, evals, histories):
     return sars
 
 
-def flatten(l):
-    return [item for sublist in l for item in sublist]
+def update(model, tokenizer, league, matches, evals, history, config):
+    sars = trajectories_by_model(league, matches, evals, history)
+
+    for player in league:
+        if len(sars[json.dumps(player)]) < 1:
+            continue
+
+        dataset = Dataset.from_list(sars[json.dumps(player)])
+        dataset = pretok(dataset, tokenizer)
+        ppo_config = PPOConfig(ppo_epochs=1, batch_size=2, remove_unused_columns=False)
+        model.pretrained_model.set_adapter(adapter_name=json.dumps(player))
+
+        ppo_trainer = PPOTrainer(
+            model=model,
+            config=ppo_config,
+            dataset=dataset,
+            tokenizer=tokenizer,
+        )
+
+        for batch in ppo_trainer.dataloader:
+            # For some reason ppo_trainer transposes tokens.
+            batch["query_ids"] = list(torch.stack(batch["query_ids"]).T)
+            batch["completion_ids"] = list(torch.stack(batch["completion_ids"]).T)
+            batch["reward"] = list(batch["reward"].to(torch.bfloat16))
+
+            stats = ppo_trainer.step(
+                batch["query_ids"],
+                batch["completion_ids"],
+                batch["reward"],
+            )
 
 
 def populate_with_entrant_adapters(model, entrants, config):
     for entrant in entrants:
-        model.load_adapter(config["peft"]["path"], adapter_name=json.dumps(entrant))
+        model.pretrained_model.load_adapter(
+            config["peft"]["path"], adapter_name=json.dumps(entrant)
+        )
+
+
+def train(
+    model_name,
+    play,
+    match=league_match,
+    entry=league_entry,
+    update=update,
+    config=default_config(),
+):
+    model, tokenizer = get_model_tok(model_name, config)
+    league = []
+    leaderboard = {}
+
+    for generation in range(config["league"]["generations"]):
+        entrants = entry(generation, config)
+        league += entrants
+
+        leaderboard = populate_leaderboard(leaderboard, entrants, config)
+        populate_with_entrant_adapters(model, entrants, config)
+
+        matches = match(league, generation, config)
+
+        for _ in range(config["league"]["rounds"]):
+            evals, history = zip(
+                *[play(model, match, tokenizer, config) for match in matches]
+            )
+
+            leaderboard = update_leaderboard(leaderboard, matches, evals, config)
+            update(model, tokenizer, league, matches, evals, history, config)
+
+    return league
 
 
 def get_peft_config(config):
@@ -121,14 +164,12 @@ def get_model_tok(model_name, config):
     """
     Given model name and `pelt` config, return `peft`-wrapped backbone model and tokenizer.
     """
-    model = AutoModelForCausalLM.from_pretrained(model_name)
     peft_config = get_peft_config(config)
-    peft_model = get_peft_model(model, peft_config)
-    peft_model.save_pretrained(config["peft"]["path"])
-    model = AutoModelForCausalLM.from_pretrained(model_name)
-    peft_model = PeftModel.from_pretrained(model, config["peft"]["path"])
+    trl_peft_model = AutoModelForCausalLMWithValueHead.from_pretrained(
+        model_name, peft_config=peft_config
+    )
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token = tokenizer.eos_token
 
-    return peft_model, tokenizer
+    return trl_peft_model, tokenizer

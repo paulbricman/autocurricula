@@ -14,10 +14,9 @@ def config():
     return default_config()
 
 
-def test_league_entry(model_tok, config):
-    model, _ = model_tok
+def test_league_entry(config):
     entrants_by_generation = [
-        league_entry(model, generation, config) for generation in range(4)
+        league_entry(generation, config) for generation in range(4)
     ]
 
     # There's just a new main agent, then also a new main exploiter, then also a new league exploiter.
@@ -26,13 +25,12 @@ def test_league_entry(model_tok, config):
     assert len(entrants_by_generation[2]) == len(entrants_by_generation[3])
 
 
-def test_league_match(model_tok, config):
-    model, _ = model_tok
+def test_league_match(config):
     league = []
     matches_by_generation = []
 
     for generation in range(3):
-        league += league_entry(model, generation, config)
+        league += league_entry(generation, config)
         matches_by_generation += [league_match(league, generation, config)]
 
     assert all([m == matches_by_generation[0][0] for m in matches_by_generation[0]])

@@ -3,16 +3,14 @@ from pelt.training import (
     populate_with_entrant_adapters,
     train,
     trajectories_by_model,
+    update,
 )
 from pelt.defaults import default_config
 from pelt.operators import league_entry
 from pelt.games.tictactoe import play
+
 import pytest
-import pprint
 import json
-
-
-pp = pprint.PrettyPrinter()
 
 
 @pytest.fixture
@@ -21,54 +19,26 @@ def config():
 
 
 @pytest.fixture
-def model_tok(config):
-    return get_model_tok("facebook/opt-125m", config)
+def league():
+    return [{"gen": 0}, {"gen": 1}]
 
 
-def test_adapters(model_tok, config):
-    peft_model, _ = model_tok
-    peft_model.load_adapter(config["peft"]["path"], adapter_name="A1")
-    peft_model.set_adapter(adapter_name="A1")
-
-    assert list(peft_model.peft_config.keys()) == ["default", "A1"]
-    assert peft_model.active_adapter == "A1"
-
-    peft_model.load_adapter(config["peft"]["path"], adapter_name="A2")
-    peft_model.set_adapter(adapter_name="A2")
-
-    assert list(peft_model.peft_config.keys()) == ["default", "A1", "A2"]
-    assert peft_model.active_adapter == "A2"
-
-    peft_model.set_adapter(adapter_name="default")
-    assert peft_model.active_adapter == "default"
-
-
-def test_populate_with_entrant_adapters(model_tok, config):
-    peft_model, _ = model_tok
-
-    league = []
-    for generation in range(config["league"]["generations"]):
-        entrants = league_entry(peft_model, generation, config)
-        league += entrants
-        populate_with_entrant_adapters(peft_model, entrants, config)
-
-        # There's also the default adapter.
-        assert len(league) == len(peft_model.peft_config) - 1
-
-    # The adapter names should actually correspond to the player dicts.
-    assert [
-        json.loads(e) for e in peft_model.peft_config.keys() if e != "default"
-    ] == league
-
-
-def test_trajectories_by_model():
-    league = [{"gen": 0}, {"gen": 1}]
-    matches = [
+@pytest.fixture
+def matches():
+    return [
         ({"gen": 0}, {"gen": 1}),
         ({"gen": 1}, {"gen": 0}),
         ({"gen": 1}, {"gen": 1}),
     ]
-    evals = [[(1, -1)], [(1, -1)], [(-1, 0)]]
+
+
+@pytest.fixture
+def evals():
+    return [[(1, -1)], [(1, -1)], [(-1, 0)]]
+
+
+@pytest.fixture
+def history():
     timeline = [
         {
             "thoughts": [
@@ -95,7 +65,57 @@ def test_trajectories_by_model():
             ]
         },
     ]
-    history = [[timeline], [timeline], [timeline[:1]]]
+    return [[timeline], [timeline], [timeline[:1]]]
+
+
+@pytest.fixture
+def model_tok(config):
+    return get_model_tok("facebook/opt-125m", config)
+
+
+def test_adapters(model_tok, config):
+    model, _ = model_tok
+    model.pretrained_model.load_adapter(config["peft"]["path"], adapter_name="A1")
+    model.pretrained_model.set_adapter(adapter_name="A1")
+
+    assert list(model.pretrained_model.peft_config.keys()) == ["default", "A1"]
+    assert model.pretrained_model.active_adapter == "A1"
+
+    model.pretrained_model.load_adapter(config["peft"]["path"], adapter_name="A2")
+    model.pretrained_model.set_adapter(adapter_name="A2")
+
+    assert list(model.pretrained_model.peft_config.keys()) == [
+        "default",
+        "A1",
+        "A2",
+    ]
+    assert model.pretrained_model.active_adapter == "A2"
+
+    model.pretrained_model.set_adapter(adapter_name="default")
+    assert model.pretrained_model.active_adapter == "default"
+
+
+def test_populate_with_entrant_adapters(model_tok, config):
+    model, _ = model_tok
+
+    league = []
+    for generation in range(config["league"]["generations"]):
+        entrants = league_entry(generation, config)
+        league += entrants
+        populate_with_entrant_adapters(model, entrants, config)
+
+        # There's also the default adapter.
+        assert len(league) == len(model.pretrained_model.peft_config) - 1
+
+    # The adapter names should actually correspond to the player dicts.
+    assert [
+        json.loads(e)
+        for e in model.pretrained_model.peft_config.keys()
+        if e != "default"
+    ] == league
+
+
+def test_trajectories_by_model(league, matches, evals, history):
     sars = trajectories_by_model(league, matches, evals, history)
 
     assert list(sars[json.dumps(league[0])][0].values()) == [
@@ -103,6 +123,12 @@ def test_trajectories_by_model():
         "A good opening would be...",
         1,
     ]
+
+
+def test_update(model_tok, league, matches, evals, history, config):
+    model, tok = model_tok
+    populate_with_entrant_adapters(model, league, config)
+    update(model, tok, league, matches, evals, history, config)
 
 
 def test_abstract_train():

@@ -31,7 +31,7 @@ def play(model, match, tokenizer, config):
         if isinstance(current_player, dict):
             current_player = json.dumps(current_player)
 
-        model.set_adapter(current_player)
+        model.pretrained_model.set_adapter(current_player)
 
         # Only act in active timelines.
         active_timelines = list(compress(history, active_timelines_mask))

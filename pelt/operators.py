@@ -1,7 +1,7 @@
 import random
 
 
-def league_entry(model, generation, config):
+def league_entry(generation, config):
     """
     Default league training entry logic by generation.
     """
