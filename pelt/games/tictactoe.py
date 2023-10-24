@@ -8,16 +8,8 @@ import json
 
 def play(model, match, tokenizer, config):
     """
-    Given a list of players and a tokenizer, return the outcomes of the game (i.e. evals, history).
-
-    Args:
-        model: peft-wrapped model backbone
-        match: list of player dicts
-        tokenizer: `transformers` tokenizer used by model
-        config: standard config dict ("game" subdict being most relevant)
-
-    Returns:
-        Tuple of evals and play history.
+    Given a list of players and a tokenizer, return the outcomes of the
+    game (i.e. evals, history).
     """
     batch_size = config["game"]["batch_size"]
     history = [[] for _ in range(batch_size)]
@@ -58,12 +50,14 @@ def play(model, match, tokenizer, config):
 
 def act(model, tokenizer, history):
     """
-    Given the history of the game, a model, and a tokenizer, produce an intermediate reasoning trace and an action.
+    Given the history of the game, a model, and a tokenizer, produce an intermediate
+    reasoning trace and an action.
 
     Args:
         model: `transformers` or `peft`-wrapped model
         tokenizer: `transformers` tokenizer used by model
-        history: past actions and associated trains of thought (B x [T x (E x [(context, thought)], action)]).
+        history: past actions and associated trains of thought
+            (B x [T x (E x [(context, thought)], action)]).
 
     Returns:
         Yet another ([(context, thought), (extended_context, action)], action) object.

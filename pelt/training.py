@@ -13,6 +13,10 @@ import json
 
 
 def pretok(dataset, tokenizer):
+    """
+    Tokenize the texts which comprise the dataset on which the players are trained on in advance.
+    """
+
     def tokenize(sample):
         sample["query_ids"] = tokenizer.encode(
             sample["query"], truncation=True, padding="max_length", max_length=16
@@ -25,11 +29,16 @@ def pretok(dataset, tokenizer):
     return dataset.map(tokenize, batched=False)
 
 
-def flatten(l):
-    return [item for sublist in l for item in sublist]
-
-
 def trajectories_by_model(league, matches, evals, histories):
+    """
+    Merge self-contained objects containing info on who played who, how they played,
+    and with what outcomes into a unified dict where keys are players and values are
+    lists of state-action-reward dicts on which to later train on.
+    """
+
+    def flatten(l):
+        return [item for sublist in l for item in sublist]
+
     sars = {}
     for player in league:
         sars[json.dumps(player)] = []
@@ -77,6 +86,11 @@ def trajectories_by_model(league, matches, evals, histories):
 
 
 def update(model, tokenizer, league, matches, evals, history, config):
+    """
+    Given self-contained objects containing info on who played who, how they played,
+    and with what outcomes, manage the whole process of updating players in light of
+    their experiences.
+    """
     sars = trajectories_by_model(league, matches, evals, history)
 
     for player in league:
@@ -85,7 +99,9 @@ def update(model, tokenizer, league, matches, evals, history, config):
 
         dataset = Dataset.from_list(sars[json.dumps(player)])
         dataset = pretok(dataset, tokenizer)
-        ppo_config = PPOConfig(ppo_epochs=1, batch_size=2, remove_unused_columns=False)
+        ppo_config = PPOConfig(
+            ppo_epochs=1, batch_size=min(2, len(dataset)), remove_unused_columns=False
+        )
         model.pretrained_model.set_adapter(adapter_name=json.dumps(player))
 
         ppo_trainer = PPOTrainer(
@@ -109,6 +125,9 @@ def update(model, tokenizer, league, matches, evals, history, config):
 
 
 def populate_with_entrant_adapters(model, entrants, config):
+    """
+    Actually go and create new adapters in the backbone model for new players.
+    """
     for entrant in entrants:
         model.pretrained_model.load_adapter(
             config["peft"]["path"], adapter_name=json.dumps(entrant)
@@ -123,6 +142,11 @@ def train(
     update=update,
     config=default_config(),
 ):
+    """
+    High-level method orchestrating the whole process of having models play each other
+    and updating their respective adapters in light of their experiences.
+    """
+
     model, tokenizer = get_model_tok(model_name, config)
     league = []
     leaderboard = {}
@@ -148,8 +172,6 @@ def train(
 
 
 def get_peft_config(config):
-    # You'd think `PeftConfig` could handle all supported peft methods.
-    # However, `peft` codebase itself still has rough edges.
     if config["peft"]["peft_type"] == "LORA":
         return LoraConfig(
             task_type=TaskType.CAUSAL_LM,

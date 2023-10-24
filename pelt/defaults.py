@@ -13,7 +13,7 @@ def default_config():
                 "ma_le": 0.2,
             },
         },
-        "game": {"batch_size": 1},
+        "game": {"batch_size": 2},
         "peft": {
             "path": "./data",
             "peft_type": "LORA",
