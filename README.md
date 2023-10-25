@@ -28,7 +28,7 @@ sp_trainer.train("facebook/opt-125m", play)
 
 Naive self-play can end up chasing cycles. Imagine an initial policy **_A_** that forces a counterpolicy **_B_** to emerge, the latter of which then forces a **_C_** policy. However, it might be the case that **_C_** is actually susceptible to **_A_**, incentivizing it again, and so chasing a cycle.
 
-League training has been designed to alleviate this issue, yielding a [grandmaster StarCraft II bot](https://www.deepmind.com/blog/alphastar-grandmaster-level-in-starcraft-ii-using-multi-agent-reinforcement-learning). The setup involves agents playing against themselves (i.e. self-play), playing against their past selves (i.e. fictitious self-play), playing against tailored opponents (i.e. main exploiters), and playing against opponents targeting the systematic vulnerabilities of the whole population (i.e. league exploiters). Together, these interactions yield never-ending stream challenges for individuals to surpass without chasing cycles.
+League training has been designed to alleviate this issue, yielding a [grandmaster StarCraft II bot](https://www.deepmind.com/blog/alphastar-grandmaster-level-in-starcraft-ii-using-multi-agent-reinforcement-learning). The setup involves agents playing against themselves (i.e. self-play), playing against their past selves (i.e. fictitious self-play), playing against tailored opponents (i.e. main exploiters), and playing against opponents targeting the systematic vulnerabilities of the whole population (i.e. league exploiters). Together, these interactions yield a never-ending stream of challenges for individuals to surpass without chasing cycles.
 
 Training a model using league training is similarly straightforward:
 
@@ -67,7 +67,7 @@ Second, `autocurricula` itself builds on: 🤗 `transformers` for models, 🤗 `
 # The aim of this game is to produce a number that's larger than the one issued by the opponent.
 ```
 
-### Using a custom trainer
+### Implementing a custom trainer
 
 ```python
 # GANTrainer
