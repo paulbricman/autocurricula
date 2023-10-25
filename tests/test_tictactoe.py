@@ -1,7 +1,7 @@
-from pelt.games.tictactoe import play, act, eval, preprocess
-from pelt.games.utils import action_ints_to_history
-from pelt.defaults import default_config
-from pelt.training import get_model_tok
+from autocurricula.games.tictactoe import play, act, eval, preprocess
+from autocurricula.games.utils import action_ints_to_history
+from autocurricula.defaults import default_config
+from autocurricula.autocurriculum_trainer import get_model_tok
 import pytest
 
 

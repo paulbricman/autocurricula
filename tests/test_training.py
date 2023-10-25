@@ -1,13 +1,13 @@
-from pelt.training import (
+from autocurricula.autocurriculum_trainer import (
     get_model_tok,
     populate_with_entrant_adapters,
     train,
     trajectories_by_model,
     update,
 )
-from pelt.defaults import default_config
-from pelt.operators import league_entry
-from pelt.games.tictactoe import play
+from autocurricula.defaults import default_config
+from autocurricula.operators import league_entry
+from autocurricula.games.tictactoe import play
 
 import pytest
 import json

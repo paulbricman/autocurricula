@@ -1,6 +1,6 @@
-from pelt.operators import league_entry, league_match
-from pelt.training import get_model_tok
-from pelt.defaults import default_config
+from autocurricula.operators import league_entry, league_match
+from autocurricula.autocurriculum_trainer import get_model_tok
+from autocurricula.defaults import default_config
 import pytest
 
 

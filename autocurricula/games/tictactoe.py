@@ -1,4 +1,4 @@
-from pelt.games.utils import is_integer, illegal
+from autocurricula.games.utils import is_integer, illegal
 from typing import List, Tuple
 from pettingzoo.classic import tictactoe_v3
 import numpy as np

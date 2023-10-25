@@ -1,36 +1,41 @@
-from pelt.leaderboard import new_elos
-from pelt.defaults import default_config
-from pelt.leaderboard import populate_leaderboard, update_leaderboard
+from autocurricula.league_trainer import LeagueTrainer
+from autocurricula.league_config import LeagueConfig
+from autocurricula.defaults import default_peft_config
 import pytest
 import json
 
 
 @pytest.fixture
-def config():
-    return default_config()
+def ac_trainer():
+    ac_config = LeagueConfig(
+        generations=2,
+        rounds=2,
+        matches=10,
+        ma_weight=0.4,
+        me_weight=0.2,
+        le_weight=0.4,
+    )
+    ac_trainer = LeagueTrainer(ac_config)
+    ac_trainer.pin_model_and_tok("facebook/opt-125m", default_peft_config())
+    return ac_trainer
 
 
-def test_new_elos():
-    olds = 1000, 1000
-    news = new_elos(*olds)
-    assert news[0] > olds[0] and news[1] < olds[1]
+def test_populate_leaderboard(ac_trainer):
+    entrants = [{"gen": g} for g in range(3)]
+    ac_trainer.accommodate_entrants(entrants)
+
+    assert len(ac_trainer.leaderboard) == len(entrants)
 
 
-def test_populate_leaderboard(config):
-    entrants = [{"generation": g} for g in range(3)]
-    leaderboard = {}
-
-    leaderboard = populate_leaderboard(leaderboard, entrants, config)
-    assert len(leaderboard) == len(entrants)
-
-
-def test_update_leaderboard(config):
-    league = [{"generation": g} for g in range(3)]
-    matches = [(league[0], league[1]), (league[1], league[2])] * 10
+def test_update_leaderboard(ac_trainer):
+    entrants = [{"gen": g} for g in range(3)]
+    matches = [(entrants[0], entrants[1]), (entrants[1], entrants[2])] * 10
     evals = [[(-1, 1)], [(-1, 1)]] * 10
 
-    leaderboard = {}
-    leaderboard = populate_leaderboard(leaderboard, league, config)
-    leaderboard = update_leaderboard(leaderboard, matches, evals, config)
+    ac_trainer.accommodate_entrants(entrants)
+    ac_trainer.update_leaderboard(matches, evals)
 
-    assert leaderboard[json.dumps(league[0])] < leaderboard[json.dumps(league[2])]
+    assert (
+        ac_trainer.leaderboard[json.dumps(entrants[0])]
+        < ac_trainer.leaderboard[json.dumps(entrants[2])]
+    )

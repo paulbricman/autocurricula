@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="pelt",
+    name="autocurricula",
     packages=find_packages(),
 )

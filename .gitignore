@@ -1,4 +1,5 @@
-data/*
+adapter_params/*
+tests/adapter_params/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
