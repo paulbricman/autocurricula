@@ -1,6 +1,7 @@
 from autocurricula.autocurriculum_trainer import AutocurriculumTrainer
 from autocurricula.league_config import LeagueConfig
 
+from typing import List, Dict, Tuple
 import random
 
 
@@ -9,9 +10,9 @@ class LeagueTrainer(AutocurriculumTrainer):
         assert isinstance(ac_config, LeagueConfig)
         super().__init__(ac_config)
 
-    def entry(self):
+    def entry(self) -> List[Dict]:
         """
-        Self-explanatory league training entry logic.
+        League training entry logic.
         """
         entrants = [
             {
@@ -35,7 +36,7 @@ class LeagueTrainer(AutocurriculumTrainer):
             ]
         return entrants
 
-    def match(self):
+    def match(self) -> List[Tuple]:
         """
         League training matchmaking logic.
         """
@@ -58,7 +59,9 @@ class LeagueTrainer(AutocurriculumTrainer):
             league_exploiters = [
                 p for p in self.players if p["role"] == "league_exploiter"
             ]
-            current_le = [p for p in league_exploiters if p["gen"] == self.current_gen]
+            current_le = [p for p in league_exploiters if p["gen"] == self.current_gen][
+                0
+            ]
 
             # Latest league exploiter plays the entire league except itself.
             le_matches = [(current_le, p) for p in self.players if p is not current_le]

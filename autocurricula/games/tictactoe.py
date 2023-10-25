@@ -1,17 +1,25 @@
-from autocurricula.games.utils import is_integer, illegal
-from typing import List, Tuple
+from autocurricula.games.utils import is_integer, illegal, set_player
+
+from trl import AutoModelForCausalLMWithValueHead
+from transformers import AutoTokenizer
 from pettingzoo.classic import tictactoe_v3
-import numpy as np
+
+from typing import Tuple, Dict, List
 from itertools import compress
+import numpy as np
 import json
 
 
-def play(model, match, tokenizer, config):
+def play(
+    model: AutoModelForCausalLMWithValueHead,
+    match: Tuple[Dict],
+    tokenizer: AutoTokenizer,
+) -> Tuple[List[Tuple], List[List[Dict]]]:
     """
     Given a list of players and a tokenizer, return the outcomes of the
     game (i.e. evals, history).
     """
-    batch_size = config["game"]["batch_size"]
+    batch_size = 4
     history = [[] for _ in range(batch_size)]
     evals = [() for _ in range(batch_size)]
     active_timelines_mask = [True for _ in range(batch_size)]
@@ -23,7 +31,7 @@ def play(model, match, tokenizer, config):
         if isinstance(current_player, dict):
             current_player = json.dumps(current_player)
 
-        model.pretrained_model.set_adapter(current_player)
+        set_player(model, current_player)
 
         # Only act in active timelines.
         active_timelines = list(compress(history, active_timelines_mask))
@@ -48,19 +56,14 @@ def play(model, match, tokenizer, config):
     return evals, history
 
 
-def act(model, tokenizer, history):
+def act(
+    model: AutoModelForCausalLMWithValueHead,
+    tokenizer: AutoTokenizer,
+    history: List[List[Dict]],
+) -> List[Dict]:
     """
     Given the history of the game, a model, and a tokenizer, produce an intermediate
     reasoning trace and an action.
-
-    Args:
-        model: `transformers` or `peft`-wrapped model
-        tokenizer: `transformers` tokenizer used by model
-        history: past actions and associated trains of thought
-            (B x [T x (E x [(context, thought)], action)]).
-
-    Returns:
-        Yet another ([(context, thought), (extended_context, action)], action) object.
     """
     # First, work towards generating a reasoning trace.
     contexts = preprocess(history)
@@ -125,7 +128,7 @@ def act(model, tokenizer, history):
     return actions
 
 
-def preprocess(history):
+def preprocess(history: List[List[Dict]]) -> List[str]:
     """
     Helper function to put together prompt header for TicTacToe.
     It involves rewinding the game for each timeline, string templating.
@@ -184,7 +187,7 @@ def preprocess(history):
     return [preprocess_timeline(timeline) for timeline in history]
 
 
-def eval(history):
+def eval(history: List[List[Dict]]) -> List[Tuple]:
     """
     Given play history, compute player evals.
     """
@@ -227,7 +230,7 @@ def eval(history):
     return [eval_timeline(timeline) for timeline in history]
 
 
-def description():
+def description() -> str:
     # From PettingZoo game page:
     return """Tic-tac-toe is a simple turn based strategy game where 2 players, X and O, take turns marking spaces on a 3 x 3 grid. The first player to place 3 of their marks in a horizontal, vertical, or diagonal line is the winner.
 

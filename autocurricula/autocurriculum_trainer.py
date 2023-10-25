@@ -1,12 +1,14 @@
 from autocurricula.defaults import default_peft_config, default_ppo_config
 from autocurricula.autocurriculum_config import AutocurriculumConfig
 
-from trl import PPOTrainer
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from datasets import Dataset
-import torch
-from transformers import AutoTokenizer
 from trl import AutoModelForCausalLMWithValueHead
+from trl import PPOTrainer, PPOConfig
+from peft import PeftConfig
+import torch
 
+from typing import List, Tuple, Dict, Union, Callable
 import json
 from abc import ABC, abstractmethod
 
@@ -44,16 +46,16 @@ class AutocurriculumTrainer(ABC):
 
     def train(
         self,
-        model,
-        play,
-        peft_config=default_peft_config(),
-        ppo_config=default_ppo_config(),
+        model: Union[str, AutoModelForCausalLM],
+        play: Callable,
+        peft_config: PeftConfig = default_peft_config(),
+        ppo_config: PPOConfig = default_ppo_config(),
     ):
         """
         High-level method orchestrating the whole process of having models play each other
         and updating their respective adapters in light of their experiences.
         """
-        self.pin_model_and_tok(model)
+        self.pin_model_and_tok(model, peft_config)
         self.peft_config, self.ppo_config = peft_config, ppo_config
 
         for self.current_gen in range(self.ac_config.generations):
@@ -61,12 +63,13 @@ class AutocurriculumTrainer(ABC):
             matches = self.match()
 
             for _ in range(self.ac_config.rounds):
+                print(matches[0])
                 evals_histories = [play(self.model, m, self.tokenizer) for m in matches]
                 evals, histories = zip(*evals_histories)
                 self.update_players(matches, evals, histories)
                 self.update_leaderboard(matches, evals)
 
-    def accommodate_entrants(self, entrants):
+    def accommodate_entrants(self, entrants: List[Dict]):
         self.players += entrants
 
         for entrant in entrants:
@@ -74,10 +77,10 @@ class AutocurriculumTrainer(ABC):
 
         for entrant in entrants:
             self.model.pretrained_model.load_adapter(
-                "./adapter_params", adapter_name=json.dumps(entrant)
+                "adapter_params", adapter_name=json.dumps(entrant)
             )
 
-    def update_leaderboard(self, matches, evals):
+    def update_leaderboard(self, matches: List[Tuple], evals: List[List[Tuple]]):
         """
         Given a host of matches and their outcomes, update the leaderboarb with new ELOs.
         """
@@ -110,7 +113,9 @@ class AutocurriculumTrainer(ABC):
                         self.leaderboard[json.dumps(loser)],
                     )
 
-    def update_players(self, matches, evals, history):
+    def update_players(
+        self, matches: List[Tuple], evals: List[List[Tuple]], history: List[List[Dict]]
+    ):
         """
         Given self-contained objects containing info on who played who, how they played,
         and with what outcomes, manage the whole process of updating players in light of
@@ -118,7 +123,7 @@ class AutocurriculumTrainer(ABC):
         """
         sars = self.trajectories_by_player(matches, evals, history)
 
-        for player in self.league:
+        for player in self.players:
             if len(sars[json.dumps(player)]) < 1:
                 continue
 
@@ -145,7 +150,12 @@ class AutocurriculumTrainer(ABC):
                     batch["reward"],
                 )
 
-    def trajectories_by_player(self, matches, evals, histories):
+    def trajectories_by_player(
+        self,
+        matches: List[Tuple],
+        evals: List[List[Tuple]],
+        histories: List[List[Dict]],
+    ):
         """
         Merge self-contained objects containing info on who played who, how they played,
         and with what outcomes into a unified dict where keys are players and values are
@@ -156,7 +166,7 @@ class AutocurriculumTrainer(ABC):
             return [item for sublist in l for item in sublist]
 
         sars = {}
-        for player in self.league:
+        for player in self.players:
             sars[json.dumps(player)] = []
 
         for match, eval_timelines, history_timelines in zip(matches, evals, histories):
@@ -200,7 +210,7 @@ class AutocurriculumTrainer(ABC):
 
         return sars
 
-    def pretok(self, dataset, tokenizer):
+    def pretok(self, dataset: Dataset, tokenizer: AutoTokenizer):
         """
         Tokenize the texts which comprise the dataset on which the players are trained on in advance.
         """
@@ -219,14 +229,14 @@ class AutocurriculumTrainer(ABC):
 
         return dataset.map(tokenize, batched=False)
 
-    def pin_model_and_tok(self, model, peft_config):
+    def pin_model_and_tok(self, model: AutoModelForCausalLM, peft_config: PeftConfig):
         """
         Load `trl`-wrapped `peft`-wrapped model and tokenizer based on `transformers` model (name).
         """
         self.model = AutoModelForCausalLMWithValueHead.from_pretrained(
             model, peft_config=peft_config
         )
-        self.model.pretrained_model.save_pretrained("./adapter_params")
+        self.model.pretrained_model.save_pretrained("adapter_params")
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model.pretrained_model.config._name_or_path
         )

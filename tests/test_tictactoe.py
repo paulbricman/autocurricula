@@ -1,18 +1,25 @@
 from autocurricula.games.tictactoe import play, act, eval, preprocess
 from autocurricula.games.utils import action_ints_to_history
-from autocurricula.defaults import default_config
-from autocurricula.autocurriculum_trainer import get_model_tok
+from autocurricula.league_trainer import LeagueTrainer
+from autocurricula.league_config import LeagueConfig
+from autocurricula.defaults import default_peft_config
+
 import pytest
 
 
 @pytest.fixture
-def config():
-    return default_config()
-
-
-@pytest.fixture
-def model_tok(config):
-    return get_model_tok("facebook/opt-125m", config)
+def ac_trainer():
+    ac_config = LeagueConfig(
+        generations=4,
+        rounds=2,
+        matches=10,
+        ma_weight=0.4,
+        me_weight=0.2,
+        le_weight=0.4,
+    )
+    ac_trainer = LeagueTrainer(ac_config)
+    ac_trainer.pin_model_and_tok("facebook/opt-125m", default_peft_config())
+    return ac_trainer
 
 
 def test_eval():
@@ -63,20 +70,17 @@ def test_preprocess():
     assert isinstance(contexts[0], str)
 
 
-def test_act(model_tok):
-    model, tokenizer = model_tok
+def test_act(ac_trainer):
     history = action_ints_to_history([[0, 6, 1, 7], [0, 6, 1, 7]])
-    timelines = act(model, tokenizer, history)
+    timelines = act(ac_trainer.model, ac_trainer.tokenizer, history)
 
-    assert len(timelines) == 2  # two timelines
-    assert len(timelines[0]["thoughts"]) == 2  # two thoughts behind an action
+    assert len(timelines) == 2
+    assert len(timelines[0]["thoughts"]) == 2
 
 
-def test_play(model_tok, config):
-    model, tokenizer = model_tok
-
+def test_play(ac_trainer):
     # Pretend a toy model is actually two models playing.
-    evals, history = play(model, ["default", "default"], tokenizer, config)
-    assert evals == [
-        (-1, 0) for b in range(config["game"]["batch_size"])
-    ]  # at this size, should be illegals
+    evals, history = play(
+        ac_trainer.model, ["default", "default"], ac_trainer.tokenizer
+    )
+    assert all([e == (-1, 0) for e in evals])

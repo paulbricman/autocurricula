@@ -1,6 +1,7 @@
 from autocurricula.league_trainer import LeagueTrainer
 from autocurricula.league_config import LeagueConfig
 from autocurricula.defaults import default_peft_config
+
 import pytest
 import json
 
