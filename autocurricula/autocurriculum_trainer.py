@@ -56,7 +56,7 @@ class AutocurriculumTrainer(ABC):
         self.pin_model_and_tok(model)
         self.peft_config, self.ppo_config = peft_config, ppo_config
 
-        for _ in range(self.ac_config.generations):
+        for self.current_gen in range(self.ac_config.generations):
             self.accommodate_entrants(self.entry())
             matches = self.match()
 
