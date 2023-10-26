@@ -63,7 +63,7 @@ Second, `autocurricula` itself builds on: 🤗 `transformers` for models, 🤗 `
 
 Using `autocurricula` beyond toy examples typically involves working with three functions:
 
-1. **`play`** _Who wins?_ Maps players, the backbone model, and its tokenizer to a batch of rewards. The `play` function essentially abstracts away from the specifics of the multi-player game at hand, allowing users to bring in their own (chess, Go, debate, prove/verify theorem, generate/discriminate story, [MakeMeSay](https://github.com/openai/evals/tree/main/evals/elsuite/make_me_say), etc.).
+1. **`play`** _Who wins?_ This function maps players, the backbone model, and its tokenizer to a batch of rewards. `play` essentially abstracts away from the specifics of the multi-player game at hand, allowing users to bring in their own (chess, Go, debate, prove/verify theorem, generate/discriminate story, [MakeMeSay](https://github.com/openai/evals/tree/main/evals/elsuite/make_me_say), etc.).
 
 2. **`match`** _Who plays who?_ Uses the player pool to schedule multi-player matchups. The `match` function, together with the `entry` function below, abstract away from the specifics of different autocurricula.
 
@@ -121,7 +121,7 @@ print(sp_trainer.leaderboard)
 
 ### Using custom `match` and `entry` methods
 
-Across the `play`, `match`, and `entry` functions, players are simply represented as custom dicts, with `autocurricula` handling the model adapters under the hood. For instance a `lt_trainer.players` might contain the following entry:
+Across the `play`, `match`, and `entry` functions, players are simply represented as custom dicts, with `autocurricula` handling the model adapters under the hood. For instance the `lt_trainer.players` pool might contain the following entry:
 
 ```JSON
 {
