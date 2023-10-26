@@ -124,7 +124,7 @@ class AutocurriculumTrainer(ABC):
         sars = self.trajectories_by_player(matches, evals, history)
 
         for player in self.players:
-            if len(sars[json.dumps(player)]) < 1:
+            if len(sars[json.dumps(player)]) < 1 or player["gen"] != self.current_gen:
                 continue
 
             dataset = Dataset.from_list(sars[json.dumps(player)])
