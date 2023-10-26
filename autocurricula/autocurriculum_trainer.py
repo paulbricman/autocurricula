@@ -75,6 +75,7 @@ class AutocurriculumTrainer(ABC):
                 self.update_leaderboard(matches, evals)
 
     def accommodate_entrants(self, entrants: List[Dict]):
+        # TODO: Force a "gen" field on the entrants so that users don't have to.
         self.players += entrants
 
         for entrant in entrants:

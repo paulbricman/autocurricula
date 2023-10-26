@@ -121,7 +121,7 @@ print(sp_trainer.leaderboard)
 
 ### Using custom `match` and `entry` methods
 
-Across the `play`, `match`, and `entry` functions, players are simply represented as custom dicts, with `autocurricula` handling the model adapters under the hood. For instance the `lt_trainer.players` pool might contain the following entry:
+Across the `play`, `match`, and `entry` functions, players are simply represented as custom dicts, with `autocurricula` handling the model adapters under the hood. For instance, the `lt_trainer.players` pool might contain the following entry:
 
 ```JSON
 {
@@ -130,8 +130,41 @@ Across the `play`, `match`, and `entry` functions, players are simply represente
 }
 ```
 
-These player "specs" can contain any kinds of fields to be employed by custom methods. See below for an example of working with GAN-like `"generator"` and `"discriminator"` roles. The only requirement is for the `"gen"` field to be populated accordingly during `entry`. This helps identify the latest generation of players so as to only spend compute on training these.
+These player "specs" can contain any kinds of fields to be employed by custom methods. The only requirement is for the `"gen"` field to be populated accordingly during `entry`. This helps identify the latest generation of players so as to only spend compute on training these.
+
+The sketch below implements an autocurriculum with the following logic. Each generation, we get a new generator and a new discriminator. The latest generator (discriminator) then goes to play against all past discriminators (generators). The autocurriculum could then be used in tandem with custom `play` functions to train models to generate (and inspect) solutions to math problems, solutions to coding puzzles, engaging stories, etc.
 
 ```python
-# GANTrainer
+from autocurricula import AutocurriculumConfig, AutocurriculumTrainer
+
+
+class FicticiousGANConfig(AutocurriculumConfig):
+    def __init__(self, generations: int = 4, rounds: int = 2):
+        super().__init__(generations, rounds)
+
+
+class FicticiousGANTrainer(AutocurriculumTrainer):
+    def __init__(self, ac_config):
+        assert isinstance(ac_config, FicticiousGANConfig)
+        super().__init__(ac_config)
+
+    def entry(self):
+        # We get one new G and one new D each generation.
+        return [
+            {"role": "generator", "gen": self.current_gen},
+            {"role": "discriminator", "gen": self.current_gen},
+        ]
+
+    def match(self):
+        gs = [e for e in self.players if e["role"] == "generator"]
+        latest_g = sorted(gs, key=lambda x: x["gen"])[-1]
+
+        ds = [e for e in self.players if e["role"] == "discriminator"]
+        latest_d = sorted(ds, key=lambda x: x["gen"])[-1]
+
+        # Every round, latest players play all compatible past players.
+        return [(latest_g, d) for d in ds] + [(latest_d, g) for g in gs]
+
 ```
+
+If you implement a new such autocurriculum, make sure to contribute it back to the library for others to use with their own games.
