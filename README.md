@@ -92,16 +92,19 @@ def play(players, model, tokenizer):
         strs += [tokenizer.decode(str_ids)]
 
     # The rest of this function is just basic data manipulation.
-    # Package up experiences for updating the players.
+    # Package experiences as subsequent training data.
     experiences = [
         {
+            # CoT-friendly. Learn to think games through!
             "thoughts": [{"context": prompt, "behavior": str}],
             "action": str,
         }
         for str in strs
     ]
 
-    return [(strs[0] > strs[1], strs[0] < strs[1])], [experiences]
+    rewards = (strs[0] > strs[1], strs[0] < strs[1])
+
+    return [rewards], [experiences]
 
 
 sp_config = SelfPlayConfig()
