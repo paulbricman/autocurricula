@@ -1,14 +1,14 @@
 from autocurricula import AutocurriculumConfig, AutocurriculumTrainer
 
 
-class FicticiousGANConfig(AutocurriculumConfig):
+class FictitiousGANConfig(AutocurriculumConfig):
     def __init__(self, generations: int = 4, rounds: int = 2):
         super().__init__(generations, rounds)
 
 
-class FicticiousGANTrainer(AutocurriculumTrainer):
+class FictitiousGANTrainer(AutocurriculumTrainer):
     def __init__(self, ac_config):
-        assert isinstance(ac_config, FicticiousGANConfig)
+        assert isinstance(ac_config, FictitiousGANConfig)
         super().__init__(ac_config)
 
     def entry(self):
