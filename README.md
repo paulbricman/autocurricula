@@ -63,11 +63,11 @@ Second, `autocurricula` itself builds on: 🤗 `transformers` for models, 🤗 `
 
 Using `autocurricula` beyond toy examples typically involves working with three functions:
 
-1.**`play`**: _Who wins?_ Maps players, the backbone model, and its tokenizer to a batch of rewards. The `play` function essentially abstracts away from the specifics of the multi-player game at hand, allowing users to bring in their own (chess, Go, debate, prove/verify theorem, generate/discriminate story, [MakeMeSay](https://github.com/openai/evals/tree/main/evals/elsuite/make_me_say), etc.).
+1. **`play`** _Who wins?_ Maps players, the backbone model, and its tokenizer to a batch of rewards. The `play` function essentially abstracts away from the specifics of the multi-player game at hand, allowing users to bring in their own (chess, Go, debate, prove/verify theorem, generate/discriminate story, [MakeMeSay](https://github.com/openai/evals/tree/main/evals/elsuite/make_me_say), etc.).
 
-2. **`match`**: _Who plays who?_ Uses the player pool to schedule multi-player matchups. The `match` function, together with the `entry` function below, abstract away from the specifics of different autocurricula.
+2. **`match`** _Who plays who?_ Uses the player pool to schedule multi-player matchups. The `match` function, together with the `entry` function below, abstract away from the specifics of different autocurricula.
 
-3. **`entry`**: _Who is there to play?_ Yields new players based on the current generation. The only thing that separates `SelfPlayTrainer` and `LeagueTrainer` are different `match` and `entry` methods. In fact, both inherit from the abstract `AutocurriculumTrainer` and simply override these.
+3. **`entry`** _Who is there to play?_ Yields new players based on the current generation. The only thing that separates `SelfPlayTrainer` and `LeagueTrainer` are different `match` and `entry` methods. In fact, both inherit from the abstract `AutocurriculumTrainer` and simply override these.
 
 ### Using a custom `play` method
 
