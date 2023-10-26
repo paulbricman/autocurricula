@@ -83,6 +83,7 @@ def play(players, model, tokenizer):
     prompt_ids = tokenizer(prompt, return_tensors="pt")
 
     # Have each player produce a string.
+    # This game is symmetric, we treat players identically.
     strs = []
     for player in players:
         # Use `set_player` to activate the right player adapter.
@@ -119,6 +120,17 @@ print(sp_trainer.leaderboard)
 ```
 
 ### Using custom `match` and `entry` methods
+
+Across the `play`, `match`, and `entry` functions, players are simply represented as custom dicts, with `autocurricula` handling the model adapters under the hood. For instance a `lt_trainer.players` might contain the following entry:
+
+```JSON
+{
+    "role": "league_exploiter",
+    "gen": 3,
+}
+```
+
+These player "specs" can contain any kinds of fields to be employed by custom methods. See below for an example of working with GAN-like `"generator"` and `"discriminator"` roles. The only requirement is for the `"gen"` field to be populated accordingly during `entry`. This helps identify the latest generation of players so as to only spend compute on training these.
 
 ```python
 # GANTrainer
