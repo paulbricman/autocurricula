@@ -61,13 +61,61 @@ Second, `autocurricula` itself builds on: 🤗 `transformers` for models, 🤗 `
 
 ## Usage
 
+Using `autocurricula` beyond toy examples typically involves working with three functions:
+
+1.**`play`**: _Who wins?_ Maps players, the backbone model, and its tokenizer to a batch of rewards. The `play` function essentially abstracts away from the specifics of the multi-player game at hand, allowing users to bring in their own (chess, Go, debate, prove/verify theorem, generate/discriminate story, [MakeMeSay](https://github.com/openai/evals/tree/main/evals/elsuite/make_me_say), etc.).
+
+2. **`match`**: _Who plays who?_ Uses the player pool to schedule multi-player matchups. The `match` function, together with the `entry` function below, abstract away from the specifics of different autocurricula.
+
+3. **`entry`**: _Who is there to play?_ Yields new players based on the current generation. The only thing that separates `SelfPlayTrainer` and `LeagueTrainer` are different `match` and `entry` methods. In fact, both inherit from the abstract `AutocurriculumTrainer` and simply override these.
+
 ### Using a custom `play` method
 
+The aim of this toy game is to produce a string that's lexicographically larger than the one produced by the opponent. Fun times.
+
 ```python
-# The aim of this game is to produce a number that's larger than the one issued by the opponent.
+from autocurricula import SelfPlayConfig, SelfPlayTrainer
+from autocurricula.games.utils import set_player
+
+
+def play(players, model, tokenizer):
+    prompt = " "
+    prompt_ids = tokenizer(prompt, return_tensors="pt")
+
+    # Have each player produce a string.
+    strs = []
+    for player in players:
+        # Use `set_player` to activate the right player adapter.
+        set_player(model, player)
+        # Ideally you'd run multiple games in parallel by batch generation.
+        str_ids = model.generate(**prompt_ids, do_sample=True, max_new_tokens=3)[0]
+        strs += [tokenizer.decode(str_ids)]
+
+    # The rest of this function is just basic data manipulation.
+    # Package up experiences for updating the players.
+    experiences = [
+        {
+            "thoughts": [{"context": prompt, "behavior": str}],
+            "action": str,
+        }
+        for str in strs
+    ]
+
+    return [(strs[0] > strs[1], strs[0] < strs[1])], [experiences]
+
+
+sp_config = SelfPlayConfig()
+sp_trainer = SelfPlayTrainer(sp_config)
+sp_trainer.train("facebook/opt-125m", play)
+
+# Access the final list of players.
+print(sp_trainer.players)
+
+# Access the final ELO leaderboard.
+print(sp_trainer.leaderboard)
 ```
 
-### Implementing a custom trainer
+### Using custom `match` and `entry` methods
 
 ```python
 # GANTrainer
