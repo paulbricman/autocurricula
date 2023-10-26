@@ -81,6 +81,6 @@ def test_act(ac_trainer):
 def test_play(ac_trainer):
     # Pretend a toy model is actually two models playing.
     evals, history = play(
-        ac_trainer.model, ["default", "default"], ac_trainer.tokenizer
+        ["default", "default"], ac_trainer.model, ac_trainer.tokenizer
     )
     assert all([e == (-1, 0) for e in evals])

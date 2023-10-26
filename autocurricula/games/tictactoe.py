@@ -11,8 +11,8 @@ import json
 
 
 def play(
-    model: AutoModelForCausalLMWithValueHead,
     match: Tuple[Dict],
+    model: AutoModelForCausalLMWithValueHead,
     tokenizer: AutoTokenizer,
 ) -> Tuple[List[Tuple], List[List[Dict]]]:
     """

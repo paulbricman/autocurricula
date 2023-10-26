@@ -10,4 +10,4 @@ def default_peft_config() -> PeftConfig:
 
 
 def default_ppo_config() -> PPOConfig:
-    return PPOConfig(ppo_epochs=1, batch_size=2, remove_unused_columns=False)
+    return PPOConfig(ppo_epochs=1, batch_size=1, remove_unused_columns=False)

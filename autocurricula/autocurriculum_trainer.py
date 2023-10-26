@@ -3,14 +3,19 @@ from autocurricula.autocurriculum_config import AutocurriculumConfig
 
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from datasets import Dataset
+from datasets.utils.logging import disable_progress_bar
 from trl import AutoModelForCausalLMWithValueHead
 from trl import PPOTrainer, PPOConfig
 from peft import PeftConfig
 import torch
 
 from typing import List, Tuple, Dict, Union, Callable
-import json
 from abc import ABC, abstractmethod
+from tqdm import tqdm
+import json
+
+
+disable_progress_bar()
 
 
 class AutocurriculumTrainer(ABC):
@@ -58,14 +63,14 @@ class AutocurriculumTrainer(ABC):
         self.pin_model_and_tok(model, peft_config)
         self.peft_config, self.ppo_config = peft_config, ppo_config
 
-        for self.current_gen in range(self.ac_config.generations):
+        for self.current_gen in tqdm(range(self.ac_config.generations), "generation"):
             self.accommodate_entrants(self.entry())
             matches = self.match()
 
-            for _ in range(self.ac_config.rounds):
-                print(matches[0])
-                evals_histories = [play(self.model, m, self.tokenizer) for m in matches]
+            for _ in tqdm(range(self.ac_config.rounds), "round"):
+                evals_histories = [play(m, self.model, self.tokenizer) for m in matches]
                 evals, histories = zip(*evals_histories)
+
                 self.update_players(matches, evals, histories)
                 self.update_leaderboard(matches, evals)
 
@@ -99,7 +104,11 @@ class AutocurriculumTrainer(ABC):
             # There are multiple games played in parallel for throughput.
             # Each match yields a whole batch of evals.
             for eval in match_evals:
-                if eval[0] != eval[1]:
+                if (
+                    eval[0] != eval[1]
+                    and all([e is not None for e in eval])
+                    and match[0] != match[1]
+                ):
                     if eval[0] > eval[1]:
                         winner, loser = match
                     else:
@@ -139,6 +148,9 @@ class AutocurriculumTrainer(ABC):
             )
 
             for batch in ppo_trainer.dataloader:
+                if not batch:
+                    continue
+
                 # For some reason ppo_trainer transposes tokens, so transpose them back.
                 batch["query_ids"] = list(torch.stack(batch["query_ids"]).T)
                 batch["completion_ids"] = list(torch.stack(batch["completion_ids"]).T)
@@ -203,6 +215,13 @@ class AutocurriculumTrainer(ABC):
                 new_p2_experiences = [
                     {"query": q, "completion": c, "reward": r}
                     for q, c, r in zip(p2_states, p2_actions, p2_rewards)
+                ]
+
+                new_p1_experiences = [
+                    e for e in new_p1_experiences if e["reward"] is not None
+                ]
+                new_p2_experiences = [
+                    e for e in new_p2_experiences if e["reward"] is not None
                 ]
 
                 sars[json.dumps(p1)] += new_p1_experiences
