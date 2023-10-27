@@ -28,14 +28,14 @@ class AutocurriculumTrainer(ABC):
     def __init__(self, ac_config: AutocurriculumConfig):
         assert isinstance(ac_config, AutocurriculumConfig)
         self.ac_config = ac_config
-        self.current_gen = 0
+        self.current_epoch = 0
         self.players = []
         self.leaderboard = {}
 
     @abstractmethod
     def entry(self):
         """
-        In the current generation, which new players join?
+        In the current epoch, which new players join?
         Returns list of individual player dicts acting as "specs."
         """
         pass
@@ -43,7 +43,7 @@ class AutocurriculumTrainer(ABC):
     @abstractmethod
     def match(self):
         """
-        In the current generation, and given the current league who plays who?
+        In the current epoch, and given the current pool, who plays who?
         Returns list of matchups (i.e. tuples of player dicts).
         `play` will subsequently be called using these.
         """
@@ -63,7 +63,7 @@ class AutocurriculumTrainer(ABC):
         self.pin_model_and_tok(model, peft_config)
         self.peft_config, self.ppo_config = peft_config, ppo_config
 
-        for self.current_gen in tqdm(range(self.ac_config.generations), "generation"):
+        for self.current_epoch in tqdm(range(self.ac_config.epochs), "epoch"):
             self.accommodate_entrants(self.entry())
             matches = self.match()
 
@@ -76,7 +76,7 @@ class AutocurriculumTrainer(ABC):
 
     def accommodate_entrants(self, entrants: List[Dict]):
         for e_idx in range(len(entrants)):
-            entrants[e_idx]["gen"] = self.current_gen
+            entrants[e_idx]["epoch"] = self.current_epoch
 
         self.players += entrants
         for entrant in entrants:
@@ -93,7 +93,7 @@ class AutocurriculumTrainer(ABC):
         """
         assert all(
             [len(m) == 2 for m in matches]
-        ), "Multiplayer games aren't currently supported. But this is where they'd be!"
+        ), "Games with >2 players aren't currently supported. But this is where they'd be!"
 
         def new_elos(winner_elo, loser_elo):
             winner_expected = 1 / (1 + 10 ** ((loser_elo - winner_elo) / 400))
@@ -135,7 +135,10 @@ class AutocurriculumTrainer(ABC):
         sars = self.trajectories_by_player(matches, evals, history)
 
         for player in self.players:
-            if len(sars[json.dumps(player)]) < 1 or player["gen"] != self.current_gen:
+            if (
+                len(sars[json.dumps(player)]) < 1
+                or player["epoch"] != self.current_epoch
+            ):
                 continue
 
             dataset = Dataset.from_list(sars[json.dumps(player)])

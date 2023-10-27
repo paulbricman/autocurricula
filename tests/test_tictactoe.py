@@ -10,7 +10,7 @@ import pytest
 @pytest.fixture
 def ac_trainer():
     ac_config = LeagueConfig(
-        generations=4,
+        epochs=4,
         rounds=2,
         matches=10,
         ma_weight=0.4,

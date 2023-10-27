@@ -10,7 +10,7 @@ import json
 @pytest.fixture
 def ac_trainer():
     ac_config = LeagueConfig(
-        generations=4,
+        epochs=4,
         rounds=2,
         matches=2,
         ma_weight=0.4,
@@ -25,9 +25,9 @@ def ac_trainer():
 @pytest.fixture
 def matches():
     return [
-        ({"gen": 0}, {"gen": 1}),
-        ({"gen": 1}, {"gen": 0}),
-        ({"gen": 1}, {"gen": 1}),
+        ({"epoch": 0}, {"epoch": 1}),
+        ({"epoch": 1}, {"epoch": 0}),
+        ({"epoch": 1}, {"epoch": 1}),
     ]
 
 
@@ -92,7 +92,7 @@ def test_adapters(ac_trainer):
 
 
 def test_populate_with_entrant_adapters(ac_trainer):
-    for ac_trainer.current_gen in range(ac_trainer.ac_config.generations):
+    for ac_trainer.current_epoch in range(ac_trainer.ac_config.epochs):
         ac_trainer.accommodate_entrants(ac_trainer.entry())
 
         # There's also the default adapter.
@@ -111,12 +111,12 @@ def test_populate_with_entrant_adapters(ac_trainer):
 
 def test_trajectories_by_player(ac_trainer, matches, evals, histories):
     ac_trainer.accommodate_entrants([{}])
-    ac_trainer.current_gen += 1
+    ac_trainer.current_epoch += 1
     ac_trainer.accommodate_entrants([{}])
 
     sars = ac_trainer.trajectories_by_player(matches, evals, histories)
 
-    assert list(sars[json.dumps({"gen": 0})][0].values()) == [
+    assert list(sars[json.dumps({"epoch": 0})][0].values()) == [
         "Here's the board...",
         "A good opening would be...",
         1,
@@ -125,7 +125,7 @@ def test_trajectories_by_player(ac_trainer, matches, evals, histories):
 
 def test_update_players(ac_trainer, matches, evals, histories):
     ac_trainer.accommodate_entrants([{}])
-    ac_trainer.current_gen += 1
+    ac_trainer.current_epoch += 1
     ac_trainer.accommodate_entrants([{}])
 
     ac_trainer.ppo_config = default_ppo_config()

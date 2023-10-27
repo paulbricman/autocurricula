@@ -16,9 +16,9 @@ class LeagueTrainer(AutocurriculumTrainer):
         """
         entrants = [{"role": "main_agent"}]
 
-        if self.current_gen >= 1:
+        if self.current_epoch >= 1:
             entrants += [{"role": "main_exploiter"}]
-        if self.current_gen >= 2:
+        if self.current_epoch >= 2:
             entrants += [{"role": "league_exploiter"}]
         return entrants
 
@@ -27,27 +27,29 @@ class LeagueTrainer(AutocurriculumTrainer):
         League training matchmaking logic.
         """
         main_agents = [p for p in self.players if p["role"] == "main_agent"]
-        current_ma = [p for p in main_agents if p["gen"] == self.current_gen][0]
+        current_ma = [p for p in main_agents if p["epoch"] == self.current_epoch][0]
 
         # Latest main agent plays themselves and all past versions.
         ma_matches = [(current_ma, main_agent) for main_agent in main_agents]
         legal_match_types = [ma_matches]
 
-        if self.current_gen >= 1:
+        if self.current_epoch >= 1:
             main_exploiters = [p for p in self.players if p["role"] == "main_exploiter"]
-            current_me = [p for p in main_exploiters if p["gen"] == self.current_gen][0]
+            current_me = [
+                p for p in main_exploiters if p["epoch"] == self.current_epoch
+            ][0]
 
             # Latest main exploiter plays latest main agent.
             me_matches = [(current_me, current_ma)]
             legal_match_types += [me_matches]
 
-        if self.current_gen >= 2:
+        if self.current_epoch >= 2:
             league_exploiters = [
                 p for p in self.players if p["role"] == "league_exploiter"
             ]
-            current_le = [p for p in league_exploiters if p["gen"] == self.current_gen][
-                0
-            ]
+            current_le = [
+                p for p in league_exploiters if p["epoch"] == self.current_epoch
+            ][0]
 
             # Latest league exploiter plays the entire league except itself.
             le_matches = [(current_le, p) for p in self.players if p is not current_le]

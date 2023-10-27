@@ -14,16 +14,18 @@ class SelfPlayTrainer(AutocurriculumTrainer):
         return [{}]
 
     def match(self) -> List[Tuple]:
-        current_player = [p for p in self.players if p["gen"] == self.current_gen][0]
+        current_player = [p for p in self.players if p["epoch"] == self.current_epoch][
+            0
+        ]
 
-        if self.current_gen < 1:
+        if self.current_epoch < 1:
             return [
                 (current_player, current_player) for _ in range(self.ac_config.matches)
             ]
 
-        previous_player = [p for p in self.players if p["gen"] == self.current_gen - 1][
-            0
-        ]
+        previous_player = [
+            p for p in self.players if p["epoch"] == self.current_epoch - 1
+        ][0]
         return [
             (current_player, previous_player) for _ in range(self.ac_config.matches)
         ]

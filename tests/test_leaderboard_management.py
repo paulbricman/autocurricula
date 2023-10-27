@@ -9,7 +9,7 @@ import json
 @pytest.fixture
 def ac_trainer():
     ac_config = LeagueConfig(
-        generations=2,
+        epochs=2,
         rounds=2,
         matches=10,
         ma_weight=0.4,
@@ -24,19 +24,19 @@ def ac_trainer():
 def test_populate_leaderboard(ac_trainer):
     for _ in range(3):
         ac_trainer.accommodate_entrants([{}])
-        ac_trainer.current_gen += 1
+        ac_trainer.current_epoch += 1
 
     assert len(ac_trainer.leaderboard) == 3
 
 
 def test_update_leaderboard(ac_trainer):
-    entrants = [{"gen": g} for g in range(3)]
+    entrants = [{"epoch": g} for g in range(3)]
     matches = [(entrants[0], entrants[1]), (entrants[1], entrants[2])] * 10
     evals = [[(-1, 1)], [(-1, 1)]] * 10
 
     for _ in range(3):
         ac_trainer.accommodate_entrants([{}])
-        ac_trainer.current_gen += 1
+        ac_trainer.current_epoch += 1
 
     ac_trainer.update_leaderboard(matches, evals)
 
