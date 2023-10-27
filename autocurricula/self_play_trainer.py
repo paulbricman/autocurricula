@@ -6,7 +6,7 @@ import random
 
 
 class SelfPlayTrainer(AutocurriculumTrainer):
-    def __init__(self, ac_config: SelfPlayConfig):
+    def __init__(self, ac_config: SelfPlayConfig = SelfPlayConfig()):
         assert isinstance(ac_config, SelfPlayConfig)
         super().__init__(ac_config)
 

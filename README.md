@@ -16,11 +16,10 @@ Human data has proven sufficient to [yield artificial general intelligence](http
 Training a model using self-play is pretty straightforward:
 
 ```python
-from autocurricula import SelfPlayConfig, SelfPlayTrainer
+from autocurricula import SelfPlayTrainer
 from autocurricula.games.tictactoe import play
 
-sp_config = SelfPlayConfig()
-sp_trainer = SelfPlayTrainer(sp_config)
+sp_trainer = SelfPlayTrainer()
 sp_trainer.train("facebook/opt-125m", play)
 ```
 
@@ -33,11 +32,10 @@ League training has been designed to alleviate this issue, yielding a [grandmast
 Training a model using league training is similarly straightforward:
 
 ```python
-from autocurricula import LeagueConfig, LeagueTrainer
+from autocurricula import LeagueTrainer
 from autocurricula.games.tictactoe import play
 
-lt_config = LeagueConfig()
-lt_trainer = LeagueTrainer(lt_config)
+lt_trainer = LeagueTrainer()
 lt_trainer.train("facebook/opt-125m", play)
 ```
 
@@ -74,7 +72,7 @@ Using `autocurricula` beyond toy examples typically involves working with three 
 The aim of this toy game is to produce a string that's lexicographically larger than the one produced by the opponent. Fun times.
 
 ```python
-from autocurricula import SelfPlayConfig, SelfPlayTrainer, set_player
+from autocurricula import SelfPlayTrainer, set_player
 
 
 def play(players, model, tokenizer):
@@ -107,8 +105,7 @@ def play(players, model, tokenizer):
     return [rewards], [experiences]
 
 
-sp_config = SelfPlayConfig()
-sp_trainer = SelfPlayTrainer(sp_config)
+sp_trainer = SelfPlayTrainer()
 sp_trainer.train("facebook/opt-125m", play)
 
 # Access the final list of players.
@@ -141,7 +138,7 @@ class FictitiousGANConfig(AutocurriculumConfig):
 
 
 class FictitiousGANTrainer(AutocurriculumTrainer):
-    def __init__(self, ac_config):
+    def __init__(self, ac_config = FictitiousGANConfig()):
         assert isinstance(ac_config, FictitiousGANConfig)
         super().__init__(ac_config)
 

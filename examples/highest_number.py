@@ -47,8 +47,7 @@ def play(players, model, tokenizer):
     return [], []
 
 
-sp_config = SelfPlayConfig()
-sp_trainer = SelfPlayTrainer(sp_config)
+sp_trainer = SelfPlayTrainer()
 sp_trainer.train("facebook/opt-125m", play)
 
 # Access the final list of players.

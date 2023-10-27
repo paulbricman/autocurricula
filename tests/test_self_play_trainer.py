@@ -7,12 +7,7 @@ import pytest
 
 @pytest.fixture
 def ac_trainer():
-    ac_config = SelfPlayConfig(
-        epochs=4,
-        rounds=2,
-        matches=10,
-    )
-    ac_trainer = SelfPlayTrainer(ac_config)
+    ac_trainer = SelfPlayTrainer()
     ac_trainer.pin_model_and_tok("facebook/opt-125m", default_peft_config())
     return ac_trainer
 

@@ -7,15 +7,7 @@ import pytest
 
 @pytest.fixture
 def ac_trainer():
-    ac_config = LeagueConfig(
-        epochs=4,
-        rounds=2,
-        matches=10,
-        ma_weight=0.4,
-        me_weight=0.2,
-        le_weight=0.4,
-    )
-    ac_trainer = LeagueTrainer(ac_config)
+    ac_trainer = LeagueTrainer()
     ac_trainer.pin_model_and_tok("facebook/opt-125m", default_peft_config())
     return ac_trainer
 

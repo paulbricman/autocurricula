@@ -6,7 +6,7 @@ import random
 
 
 class LeagueTrainer(AutocurriculumTrainer):
-    def __init__(self, ac_config: LeagueConfig):
+    def __init__(self, ac_config: LeagueConfig = LeagueConfig()):
         assert isinstance(ac_config, LeagueConfig)
         super().__init__(ac_config)
 
