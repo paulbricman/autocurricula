@@ -33,7 +33,9 @@ def test_self_play_match(ac_trainer):
         ac_trainer.accommodate_entrants(ac_trainer.entry())
         matches_by_gen += [ac_trainer.match()]
 
-    assert all([len(e) == 1 for e in matches_by_gen])
+    print(matches_by_gen)
+
+    assert all([len(e) == ac_trainer.ac_config.matches for e in matches_by_gen])
     assert matches_by_gen[0][0][0] == matches_by_gen[0][0][1]
     assert set([matches_by_gen[1][0][0]["gen"], matches_by_gen[1][0][1]["gen"]]) == set(
         [0, 1]

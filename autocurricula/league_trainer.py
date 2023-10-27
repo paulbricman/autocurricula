@@ -14,26 +14,12 @@ class LeagueTrainer(AutocurriculumTrainer):
         """
         League training entry logic.
         """
-        entrants = [
-            {
-                "role": "main_agent",
-                "gen": self.current_gen,
-            }
-        ]
+        entrants = [{"role": "main_agent"}]
+
         if self.current_gen >= 1:
-            entrants += [
-                {
-                    "role": "main_exploiter",
-                    "gen": self.current_gen,
-                }
-            ]
+            entrants += [{"role": "main_exploiter"}]
         if self.current_gen >= 2:
-            entrants += [
-                {
-                    "role": "league_exploiter",
-                    "gen": self.current_gen,
-                }
-            ]
+            entrants += [{"role": "league_exploiter"}]
         return entrants
 
     def match(self) -> List[Tuple]:

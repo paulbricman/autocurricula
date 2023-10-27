@@ -1,5 +1,4 @@
-from autocurricula import SelfPlayConfig, SelfPlayTrainer
-from autocurricula.games.utils import set_player
+from autocurricula import SelfPlayConfig, SelfPlayTrainer, set_player
 
 
 def play(players, model, tokenizer):

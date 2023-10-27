@@ -14,12 +14,13 @@ class FictitiousGANTrainer(AutocurriculumTrainer):
     def entry(self):
         # We get one new G and one new D each generation.
         return [
-            {"role": "generator", "gen": self.current_gen},
-            {"role": "discriminator", "gen": self.current_gen},
+            {"role": "generator"},
+            {"role": "discriminator"},
         ]
 
     def match(self):
         gs = [e for e in self.players if e["role"] == "generator"]
+        # The "gen" field gets automatically populated for entrants.
         latest_g = sorted(gs, key=lambda x: x["gen"])[-1]
 
         ds = [e for e in self.players if e["role"] == "discriminator"]

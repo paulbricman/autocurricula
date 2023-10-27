@@ -1,5 +1,5 @@
-from autocurricula import SelfPlayConfig, SelfPlayTrainer
-from autocurricula.games.utils import set_player, is_integer, illegal
+from autocurricula import SelfPlayConfig, SelfPlayTrainer, set_player
+from autocurricula.games.utils import is_integer
 
 import math
 

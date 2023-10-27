@@ -23,11 +23,6 @@ def ac_trainer():
 
 
 @pytest.fixture
-def players():
-    return [{"gen": 0}, {"gen": 1}]
-
-
-@pytest.fixture
 def matches():
     return [
         ({"gen": 0}, {"gen": 1}),
@@ -114,19 +109,25 @@ def test_populate_with_entrant_adapters(ac_trainer):
     ] == ac_trainer.players
 
 
-def test_trajectories_by_player(ac_trainer, players, matches, evals, histories):
-    ac_trainer.accommodate_entrants(players)
+def test_trajectories_by_player(ac_trainer, matches, evals, histories):
+    ac_trainer.accommodate_entrants([{}])
+    ac_trainer.current_gen += 1
+    ac_trainer.accommodate_entrants([{}])
+
     sars = ac_trainer.trajectories_by_player(matches, evals, histories)
 
-    assert list(sars[json.dumps(players[0])][0].values()) == [
+    assert list(sars[json.dumps({"gen": 0})][0].values()) == [
         "Here's the board...",
         "A good opening would be...",
         1,
     ]
 
 
-def test_update_players(ac_trainer, players, matches, evals, histories):
-    ac_trainer.accommodate_entrants(players)
+def test_update_players(ac_trainer, matches, evals, histories):
+    ac_trainer.accommodate_entrants([{}])
+    ac_trainer.current_gen += 1
+    ac_trainer.accommodate_entrants([{}])
+
     ac_trainer.ppo_config = default_ppo_config()
     ac_trainer.update_players(matches, evals, histories)
 

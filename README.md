@@ -74,8 +74,7 @@ Using `autocurricula` beyond toy examples typically involves working with three 
 The aim of this toy game is to produce a string that's lexicographically larger than the one produced by the opponent. Fun times.
 
 ```python
-from autocurricula import SelfPlayConfig, SelfPlayTrainer
-from autocurricula.games.utils import set_player
+from autocurricula import SelfPlayConfig, SelfPlayTrainer, set_player
 
 
 def play(players, model, tokenizer):
@@ -130,9 +129,7 @@ Across the `play`, `match`, and `entry` functions, players are simply represente
 }
 ```
 
-These player "specs" can contain any kinds of fields to be employed by custom methods. The only requirement is for the `"gen"` field to be populated accordingly during `entry`. This helps identify the latest generation of players so as to only spend compute on training these.
-
-The sketch below implements an autocurriculum with the following logic. Each generation, we get a new generator and a new discriminator. The latest generator (discriminator) then goes to play against all past discriminators (generators). The autocurriculum could then be used in tandem with custom `play` functions to train models to generate (and inspect) solutions to math problems, solutions to coding puzzles, engaging stories, etc.
+These player "specs" can contain any kinds of fields to be employed by custom methods. The sketch below implements an autocurriculum with the following logic. Each generation, we get a new generator and a new discriminator. The latest generator (discriminator) then goes to play against all past discriminators (generators). The autocurriculum could then be used in tandem with custom `play` functions to train models to generate (and inspect) solutions to math problems, solutions to coding puzzles, engaging stories, etc.
 
 ```python
 from autocurricula import AutocurriculumConfig, AutocurriculumTrainer
@@ -151,12 +148,13 @@ class FictitiousGANTrainer(AutocurriculumTrainer):
     def entry(self):
         # We get one new G and one new D each generation.
         return [
-            {"role": "generator", "gen": self.current_gen},
-            {"role": "discriminator", "gen": self.current_gen},
+            {"role": "generator"},
+            {"role": "discriminator"},
         ]
 
     def match(self):
         gs = [e for e in self.players if e["role"] == "generator"]
+        # The "gen" field gets automatically populated for entrants.
         latest_g = sorted(gs, key=lambda x: x["gen"])[-1]
 
         ds = [e for e in self.players if e["role"] == "discriminator"]
@@ -164,7 +162,10 @@ class FictitiousGANTrainer(AutocurriculumTrainer):
 
         # Every round, latest players play all compatible past players.
         return [(latest_g, d) for d in ds] + [(latest_d, g) for g in gs]
-
 ```
 
 If you implement a new such autocurriculum, make sure to contribute it back to the library for others to use with their own games.
+
+## Acknowledgements
+
+The development of scale-friendly features has been enabled by access to the [TPU Research Cloud](https://sites.research.google/trc/about/).

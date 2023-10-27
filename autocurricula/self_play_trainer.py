@@ -11,11 +11,7 @@ class SelfPlayTrainer(AutocurriculumTrainer):
         super().__init__(ac_config)
 
     def entry(self) -> List[Dict]:
-        return [
-            {
-                "gen": self.current_gen,
-            }
-        ]
+        return [{}]
 
     def match(self) -> List[Tuple]:
         current_player = [p for p in self.players if p["gen"] == self.current_gen][0]
