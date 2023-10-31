@@ -1,6 +1,22 @@
+from autocurricula.games.pettingzoo_adapter import play as pz_play
+
+from trl import AutoModelForCausalLMWithValueHead
+from transformers import AutoTokenizer
 from pettingzoo.classic import chess_v6
 
-from typing import Dict, List
+from typing import Tuple, Dict, List
+
+
+def play(
+    match: Tuple[Dict],
+    model: AutoModelForCausalLMWithValueHead,
+    tokenizer: AutoTokenizer,
+) -> Tuple[List[Tuple], List[List[Dict]]]:
+    """
+    Given a list of players and a tokenizer, return the outcomes of the
+    game (i.e. evals, history).
+    """
+    return pz_play(match, model, tokenizer, preprocess, chess_v6.env())
 
 
 def preprocess(history: List[List[Dict]]) -> List[str]:

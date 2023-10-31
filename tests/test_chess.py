@@ -1,5 +1,5 @@
 from autocurricula.games.chess import preprocess
-from autocurricula.games.pettingzoo_adapter import eval, act
+from autocurricula.games.pettingzoo_adapter import play, act, eval
 from autocurricula.games.utils import action_ints_to_history
 from autocurricula.league_trainer import LeagueTrainer
 from autocurricula.league_config import LeagueConfig
@@ -38,6 +38,18 @@ def test_act(ac_trainer):
 
     assert len(timelines) == 2
     assert len(timelines[0]["thoughts"]) == 2
+
+
+def test_play(ac_trainer):
+    # Pretend a toy model is actually two models playing.
+    evals, _ = play(
+        ["default", "default"],
+        ac_trainer.model,
+        ac_trainer.tokenizer,
+        preprocess,
+        chess_v6.env(render_mode="ansi"),
+    )
+    assert all([e == (-math.inf, None) for e in evals])
 
 
 def test_eval():

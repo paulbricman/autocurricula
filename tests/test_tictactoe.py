@@ -1,6 +1,6 @@
-from autocurricula.games.tictactoe import play, act, preprocess
+from autocurricula.games.tictactoe import preprocess
 from autocurricula.games.utils import action_ints_to_history
-from autocurricula.games.pettingzoo_adapter import act, eval
+from autocurricula.games.pettingzoo_adapter import play, act, eval
 from autocurricula.league_trainer import LeagueTrainer
 from autocurricula.league_config import LeagueConfig
 from autocurricula.defaults import default_peft_config
@@ -86,5 +86,11 @@ def test_act(ac_trainer):
 
 def test_play(ac_trainer):
     # Pretend a toy model is actually two models playing.
-    evals, _ = play(["default", "default"], ac_trainer.model, ac_trainer.tokenizer)
+    evals, _ = play(
+        ["default", "default"],
+        ac_trainer.model,
+        ac_trainer.tokenizer,
+        preprocess,
+        tictactoe_v3.env(),
+    )
     assert all([e == (-math.inf, None) for e in evals])
