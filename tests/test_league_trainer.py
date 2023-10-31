@@ -13,7 +13,6 @@ def ac_trainer():
 
 
 def test_league_entry(ac_trainer):
-    # TODO: Rename generations to num_gens, num_seasons. Also current_epoch
     entrants_by_epoch = []
     for ac_trainer.current_epoch in range(ac_trainer.ac_config.epochs):
         entrants_by_epoch += [ac_trainer.entry()]

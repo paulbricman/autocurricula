@@ -1,10 +1,13 @@
-from autocurricula.games.tictactoe import play, act, eval, preprocess
-from autocurricula.games.utils import action_ints_to_history
+from autocurricula.games.tictactoe import play, act, preprocess
+from autocurricula.games.utils import action_ints_to_history, pz_eval
 from autocurricula.league_trainer import LeagueTrainer
 from autocurricula.league_config import LeagueConfig
 from autocurricula.defaults import default_peft_config
 
+from pettingzoo.classic import tictactoe_v3
+
 import pytest
+import math
 
 
 @pytest.fixture
@@ -23,22 +26,24 @@ def ac_trainer():
 
 
 def test_eval():
+    eval = lambda history: pz_eval(history, tictactoe_v3.env())
+
     # Illegal by virtue of not being PZ-compatible
     history = action_ints_to_history([["illegal"]])
-    assert eval(history) == [(-1, 0)]
+    assert eval(history) == [(-math.inf, None)]
 
     history = action_ints_to_history([[0, 6, "illegal"]])
-    assert eval(history) == [(-1, 0)]
+    assert eval(history) == [(-math.inf, None)]
 
     history = action_ints_to_history([[0, 6, 1, "illegal"]])
-    assert eval(history) == [(0, -1)]
+    assert eval(history) == [(None, -math.inf)]
 
     # Illegal by game semantics
     history = action_ints_to_history([[0, 6, 500]])
-    assert eval(history) == [(-1, 0)]
+    assert eval(history) == [(-math.inf, None)]
 
     history = action_ints_to_history([[0, 6, 1, 500]])
-    assert eval(history) == [(0, -1)]
+    assert eval(history) == [(None, -math.inf)]
 
     # Partial legal games
     history = action_ints_to_history([[0, 6, 1]])
@@ -61,7 +66,7 @@ def test_eval():
     history = action_ints_to_history(
         [[0, 6, 1, 500], [0, 6, 1, 7, 2], [0, 6, 1, 7, 3, 8]]
     )
-    assert eval(history) == [(0, -1), (1, -1), (-1, 1)]
+    assert eval(history) == [(None, -math.inf), (1, -1), (-1, 1)]
 
 
 def test_preprocess():
@@ -83,4 +88,4 @@ def test_play(ac_trainer):
     evals, history = play(
         ["default", "default"], ac_trainer.model, ac_trainer.tokenizer
     )
-    assert all([e == (-1, 0) for e in evals])
+    assert all([e == (-math.inf, None) for e in evals])

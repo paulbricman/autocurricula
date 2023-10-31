@@ -1,4 +1,4 @@
-from autocurricula.games.utils import is_integer, illegal, set_player
+from autocurricula.games.utils import set_player, pz_eval
 
 from trl import AutoModelForCausalLMWithValueHead
 from transformers import AutoTokenizer
@@ -46,7 +46,7 @@ def play(
         for id, recent_timeline in enumerate(recent_timelines):
             active_timelines[id] += [recent_timeline]
 
-        recent_evals = eval(active_timelines)
+        recent_evals = pz_eval(active_timelines, tictactoe_v3.env())
         for id, recent_eval in zip(active_timeline_idx, recent_evals):
             evals[id] = recent_eval
 
@@ -185,49 +185,6 @@ def preprocess(history: List[List[Dict]]) -> List[str]:
         return header
 
     return [preprocess_timeline(timeline) for timeline in history]
-
-
-def eval(history: List[List[Dict]]) -> List[Tuple]:
-    """
-    Given play history, compute player evals.
-    """
-
-    def eval_timeline(timeline):
-        last_move_player = (len(timeline) - 1) % 2
-        action_strings = [step["action"] for step in timeline]
-
-        # Even before game-legal moves, we need to have PZ-compatible moves.
-        if is_integer(action_strings[-1]):
-            # If all good, rewind PZ env using recorded actions.
-            action_ints = iter([int(action) for action in action_strings])
-            env = tictactoe_v3.env()
-            env.reset()
-
-            for _ in env.agent_iter():
-                _, _, termination, truncation, _ = env.last()
-                if termination or truncation:
-                    action = None
-                else:
-                    try:
-                        action = next(action_ints)
-                    except StopIteration:
-                        break
-
-                # If we've got a winner, return rewards.
-                rewards = tuple(env.rewards.values())
-                if any([reward != 0 for reward in rewards]):
-                    return rewards
-
-                # Apply action, unless game-illegal, case in which end game.
-                try:
-                    env.step(action)
-                except AssertionError:
-                    return illegal(last_move_player)
-            return tuple(env.rewards.values())
-        else:
-            return illegal(last_move_player)
-
-    return [eval_timeline(timeline) for timeline in history]
 
 
 def description() -> str:
