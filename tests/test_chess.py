@@ -1,40 +1,75 @@
-from autocurricula.games.chess import preprocess, eval
+from autocurricula.games.chess import preprocess
+from autocurricula.games.pettingzoo_adapter import eval, act
 from autocurricula.games.utils import action_ints_to_history
 from autocurricula.league_trainer import LeagueTrainer
 from autocurricula.league_config import LeagueConfig
 from autocurricula.defaults import default_peft_config
 
+from pettingzoo.classic import chess_v6
+
+import pytest
 import math
 
 
+@pytest.fixture
+def ac_trainer():
+    ac_config = LeagueConfig(
+        epochs=4,
+        rounds=2,
+        matches=10,
+        ma_weight=0.4,
+        me_weight=0.2,
+        le_weight=0.4,
+    )
+    ac_trainer = LeagueTrainer(ac_config)
+    ac_trainer.pin_model_and_tok("facebook/opt-125m", default_peft_config())
+    return ac_trainer
+
+
+def test_preprocess():
+    history = action_ints_to_history([[3589, 4165, 77, 1245, 4173, 2413]])
+    contexts = preprocess(history)
+    assert isinstance(contexts[0], str)
+
+
+def test_act(ac_trainer):
+    history = action_ints_to_history([[3589, 4165, 77, 1245], [3589, 4165, 77, 1245]])
+    timelines = act(ac_trainer.model, ac_trainer.tokenizer, history, preprocess)
+
+    assert len(timelines) == 2
+    assert len(timelines[0]["thoughts"]) == 2
+
+
 def test_eval():
+    chess_eval = lambda history: eval(history, chess_v6.env())
+
     # Illegal by virtue of not being PZ-compatible
     history = action_ints_to_history([["illegal"]])
-    assert eval(history) == [(-math.inf, None)]
+    assert chess_eval(history) == [(-math.inf, None)]
 
     history = action_ints_to_history([[3589, 4165, "illegal"]])
-    assert eval(history) == [(-math.inf, None)]
+    assert chess_eval(history) == [(-math.inf, None)]
 
     history = action_ints_to_history([[3589, 4165, 77, "illegal"]])
-    assert eval(history) == [(None, -math.inf)]
+    assert chess_eval(history) == [(None, -math.inf)]
 
     # Illegal by game semantics
     history = action_ints_to_history([[3589, 4165, 999999]])
-    assert eval(history) == [(-math.inf, None)]
+    assert chess_eval(history) == [(-math.inf, None)]
 
     history = action_ints_to_history([[3589, 4165, 77, 999999]])
-    assert eval(history) == [(None, -math.inf)]
+    assert chess_eval(history) == [(None, -math.inf)]
 
     # Partial legal games
     history = action_ints_to_history([[3589, 4165, 77]])
-    assert eval(history) == [(0, 0)]
+    assert chess_eval(history) == [(0, 0)]
 
     history = action_ints_to_history([[3589, 4165, 77, 1245]])
-    assert eval(history) == [(0, 0)]
+    assert chess_eval(history) == [(0, 0)]
 
     # Multiple timelines with mixed outcomes
     history = action_ints_to_history([[3589, 4165, 999999], [3589, 4165, 77, 999999]])
-    assert eval(history) == [(-math.inf, None), (None, -math.inf)]
+    assert chess_eval(history) == [(-math.inf, None), (None, -math.inf)]
 
     # Full legal games
     history = action_ints_to_history(
@@ -276,9 +311,4 @@ def test_eval():
             ]
         ]
     )
-
-
-def test_preprocess():
-    history = action_ints_to_history([[3589, 4165, 77, 1245, 4173, 2413]])
-    contexts = preprocess(history)
-    assert isinstance(contexts[0], str)
+    assert chess_eval(history) == [(1, -1)]

@@ -1,4 +1,5 @@
-from autocurricula.games.utils import set_player, pz_eval
+from autocurricula.games.utils import set_player
+from autocurricula.games.pettingzoo_adapter import act, eval
 
 from trl import AutoModelForCausalLMWithValueHead
 from transformers import AutoTokenizer
@@ -42,11 +43,11 @@ def play(
         )
 
         # Step through active timelines and add them back.
-        recent_timelines = act(model, tokenizer, active_timelines)
+        recent_timelines = act(model, tokenizer, active_timelines, preprocess)
         for id, recent_timeline in enumerate(recent_timelines):
             active_timelines[id] += [recent_timeline]
 
-        recent_evals = pz_eval(active_timelines, tictactoe_v3.env())
+        recent_evals = eval(active_timelines, tictactoe_v3.env())
         for id, recent_eval in zip(active_timeline_idx, recent_evals):
             evals[id] = recent_eval
 
@@ -54,78 +55,6 @@ def play(
         active_timelines_mask = [not any(e) for e in evals]
 
     return evals, history
-
-
-def act(
-    model: AutoModelForCausalLMWithValueHead,
-    tokenizer: AutoTokenizer,
-    history: List[List[Dict]],
-) -> List[Dict]:
-    """
-    Given the history of the game, a model, and a tokenizer, produce an intermediate
-    reasoning trace and an action.
-    """
-    # First, work towards generating a reasoning trace.
-    contexts = preprocess(history)
-    contexts_ids = tokenizer(contexts, return_tensors="pt")
-
-    thoughts_ids = model.generate(
-        **contexts_ids,
-        min_new_tokens=10,
-        max_new_tokens=20,
-        suppress_tokens=[198, 628],
-        do_sample=True,
-    )
-    thoughts = tokenizer.batch_decode(thoughts_ids)
-
-    # Second, use the reasoning trace to work towards an action.
-    extended_contexts = [
-        e + "...\n\nFinally, provide your intended action:" for e in thoughts
-    ]
-    extended_contexts_ids = tokenizer(
-        extended_contexts, return_tensors="pt", padding=True, truncation=True
-    )
-
-    action_ids = model.generate(
-        **extended_contexts_ids,
-        min_new_tokens=1,
-        max_new_tokens=3,
-        suppress_tokens=[198, 628],
-        do_sample=True,
-    )
-    actions = tokenizer.batch_decode(action_ids)
-
-    # Package things up nicely into experiences.
-    trimmed_thoughts = []
-    trimmed_actions = []
-    for context, extended_context, thought, action in zip(
-        contexts, extended_contexts, thoughts, actions
-    ):
-        trimmed_thoughts += [thought[len(context) :]]
-        trimmed_actions += [action[len(extended_context) :]]
-
-    context_actions = zip(
-        zip(contexts, trimmed_thoughts), zip(extended_contexts, trimmed_actions)
-    )
-
-    actions = [
-        {
-            "thoughts": [
-                {
-                    "context": e[0][0],
-                    "behavior": e[0][1],
-                },
-                {
-                    "context": e[1][0],
-                    "behavior": e[1][1],
-                },
-            ],
-            "action": e[1][1],
-        }
-        for e in context_actions
-    ]
-
-    return actions
 
 
 def preprocess(history: List[List[Dict]]) -> List[str]:

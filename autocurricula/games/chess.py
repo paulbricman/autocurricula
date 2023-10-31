@@ -1,13 +1,6 @@
-from autocurricula.games.utils import is_integer, illegal, set_player
-
-from trl import AutoModelForCausalLMWithValueHead
-from transformers import AutoTokenizer
 from pettingzoo.classic import chess_v6
 
-from typing import Tuple, Dict, List
-from itertools import compress
-import numpy as np
-import json
+from typing import Dict, List
 
 
 def preprocess(history: List[List[Dict]]) -> List[str]:
