@@ -27,7 +27,7 @@ def play(
 
 def preprocess(history: List[List[Dict]]) -> List[str]:
     """
-    Helper function to put together prompt header for TicTacToe.
+    Helper function to put together prompt header for Go.
     It involves rewinding the game for each timeline, string templating.
     """
 

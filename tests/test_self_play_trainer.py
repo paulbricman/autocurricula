@@ -28,8 +28,6 @@ def test_self_play_match(ac_trainer):
         ac_trainer.accommodate_entrants(ac_trainer.entry())
         matches_by_epoch += [ac_trainer.match()]
 
-    print(matches_by_epoch)
-
     assert all([len(e) == ac_trainer.ac_config.matches for e in matches_by_epoch])
     assert matches_by_epoch[0][0][0] == matches_by_epoch[0][0][1]
     assert set(

@@ -156,16 +156,16 @@ def eval(history: List[List[Dict]], env) -> List[Tuple]:
                     except StopIteration:
                         break
 
-                # If we've got a winner, return rewards.
-                rewards = tuple(env.rewards.values())
-                if any([reward != 0 for reward in rewards]):
-                    return rewards
-
                 # Apply action, unless game-illegal, case in which end game.
                 try:
                     env.step(action)
                 except AssertionError:
                     return illegal(last_move_player)
+
+                # If we've got a winner, return rewards.
+                rewards = tuple(env.rewards.values())
+                if any([reward != 0 for reward in rewards]):
+                    return rewards
             return tuple(env.rewards.values())
         else:
             return illegal(last_move_player)
