@@ -1,5 +1,5 @@
-from autocurricula.league_trainer import LeagueTrainer
-from autocurricula.league_config import LeagueConfig
+from autocurricula.self_play_trainer import SelfPlayTrainer
+from autocurricula.self_play_config import SelfPlayConfig
 from autocurricula.defaults import default_peft_config, default_ppo_config
 from autocurricula.games.tictactoe import play
 
@@ -9,15 +9,12 @@ import json
 
 @pytest.fixture
 def ac_trainer():
-    ac_config = LeagueConfig(
-        epochs=4,
+    ac_config = SelfPlayConfig(
+        epochs=2,
         rounds=2,
         matches=2,
-        ma_weight=0.4,
-        me_weight=0.2,
-        le_weight=0.4,
     )
-    ac_trainer = LeagueTrainer(ac_config)
+    ac_trainer = SelfPlayTrainer(ac_config)
     ac_trainer.pin_model_and_tok("facebook/opt-125m", default_peft_config())
     return ac_trainer
 
@@ -130,7 +127,3 @@ def test_update_players(ac_trainer, matches, evals, histories):
 
     ac_trainer.ppo_config = default_ppo_config()
     ac_trainer.update_players(matches, evals, histories)
-
-
-def test_train(ac_trainer):
-    ac_trainer.train("facebook/opt-125m", play)

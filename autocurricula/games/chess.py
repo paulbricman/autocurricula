@@ -28,7 +28,6 @@ def preprocess(history: List[List[Dict]]) -> List[str]:
     def preprocess_timeline(timeline):
         # For each timeline, determine the latest context.
         # History was previously `eval`-ed, so all legal.
-        current_player = (len(timeline) - 1) % 2
         action_strings = [step["action"] for step in timeline]
         action_ints = iter([int(action) for action in action_strings])
         env = chess_v6.env(render_mode="ansi")
