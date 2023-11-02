@@ -1,6 +1,7 @@
 adapter_params/*
 tests/adapter_params/*
 examples/adapter_params/*
+*.key
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

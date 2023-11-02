@@ -13,6 +13,7 @@ from typing import List, Tuple, Dict, Union, Callable
 from abc import ABC, abstractmethod
 from tqdm import tqdm
 import json
+import os
 
 
 disable_progress_bar()
@@ -261,6 +262,13 @@ class AutocurriculumTrainer(ABC):
             model, peft_config=peft_config
         )
         self.model.pretrained_model.save_pretrained("adapter_params")
+
+        if os.environ.get("PJRT_DEVICE") == "TPU":
+            import torch_xla.core.xla_model as xm
+
+            # TODO: Consider self.model.pretrained_model instead.
+            self.model.to(xm.xla_device())
+
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model.pretrained_model.config._name_or_path
         )

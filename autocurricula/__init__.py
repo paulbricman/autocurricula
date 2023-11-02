@@ -4,4 +4,6 @@ from .league_config import LeagueConfig
 from .league_trainer import LeagueTrainer
 from .self_play_config import SelfPlayConfig
 from .self_play_trainer import SelfPlayTrainer
+from .fictitious_gan_config import FictitiousGANConfig
+from .fictitious_gan_trainer import FictitiousGANTrainer
 from .games.utils import set_player

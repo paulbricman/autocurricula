@@ -138,7 +138,7 @@ class FictitiousGANConfig(AutocurriculumConfig):
 
 
 class FictitiousGANTrainer(AutocurriculumTrainer):
-    def __init__(self, ac_config = FictitiousGANConfig()):
+    def __init__(self, ac_config=FictitiousGANConfig()):
         assert isinstance(ac_config, FictitiousGANConfig)
         super().__init__(ac_config)
 

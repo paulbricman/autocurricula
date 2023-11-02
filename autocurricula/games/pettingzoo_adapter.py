@@ -7,6 +7,7 @@ from typing import List, Dict, Tuple
 from itertools import compress
 import math
 import json
+import os
 
 
 def play(
@@ -71,6 +72,11 @@ def act(
     contexts = preprocess(history)
     contexts_ids = tokenizer(contexts, return_tensors="pt")
 
+    if os.environ.get("PJRT_DEVICE") == "TPU":
+        import torch_xla.core.xla_model as xm
+
+        contexts_ids.to(xm.xla_device())
+
     thoughts_ids = model.generate(
         **contexts_ids,
         min_new_tokens=10,
@@ -87,6 +93,9 @@ def act(
     extended_contexts_ids = tokenizer(
         extended_contexts, return_tensors="pt", padding=True, truncation=True
     )
+
+    if os.environ.get("PJRT_DEVICE") == "TPU":
+        extended_contexts_ids.to(xm.xla_device())
 
     action_ids = model.generate(
         **extended_contexts_ids,
