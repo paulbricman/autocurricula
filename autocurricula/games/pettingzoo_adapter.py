@@ -70,19 +70,33 @@ def act(
     """
     # First, work towards generating a reasoning trace.
     contexts = preprocess(history)
-    contexts_ids = tokenizer(contexts, return_tensors="pt")
+    contexts_ids = tokenizer(
+        contexts,
+        return_tensors="pt",
+        padding="max_length",
+        truncation=True,
+        max_length=256,
+    )
 
-    if os.environ.get("PJRT_DEVICE") == "TPU":
+    if os.environ.get("PJRT_DEVICE") == "TPU" or os.environ.get("DEBUG_XLA"):
+        import torch_xla.debug.metrics as met
         import torch_xla.core.xla_model as xm
 
+        print("(*) Moving contexts_ids to xla device...")
+        print(met.short_metrics_report())
+
         contexts_ids.to(xm.xla_device())
+
+        print("(*) contexts_ids moved to xla device...")
+        print(met.short_metrics_report())
 
     thoughts_ids = model.generate(
         **contexts_ids,
         min_new_tokens=10,
         max_new_tokens=20,
         suppress_tokens=[198, 628],
-        do_sample=True,
+        # TODO: Restore.
+        # do_sample=True,
     )
     thoughts = tokenizer.batch_decode(thoughts_ids)
 
@@ -90,19 +104,30 @@ def act(
     extended_contexts = [
         e + "...\n\nFinally, provide your intended action:" for e in thoughts
     ]
+    # Constant input shape minimizes recompiles on PyTorch/XLA.
     extended_contexts_ids = tokenizer(
-        extended_contexts, return_tensors="pt", padding=True, truncation=True
+        extended_contexts,
+        return_tensors="pt",
+        padding="max_length",
+        truncation=True,
+        max_length=256,
     )
 
-    if os.environ.get("PJRT_DEVICE") == "TPU":
+    if os.environ.get("PJRT_DEVICE") == "TPU" or os.environ.get("DEBUG_XLA"):
+        print("(*) extended_contexts_ids contexts_ids to xla device...")
+        print(met.short_metrics_report())
         extended_contexts_ids.to(xm.xla_device())
+
+        print("(*) extended_contexts_ids moved to xla device...")
+        print(met.short_metrics_report())
 
     action_ids = model.generate(
         **extended_contexts_ids,
         min_new_tokens=1,
         max_new_tokens=3,
         suppress_tokens=[198, 628],
-        do_sample=True,
+        # TODO: Restore.
+        # do_sample=True,
     )
     actions = tokenizer.batch_decode(action_ids)
 

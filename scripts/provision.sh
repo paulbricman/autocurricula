@@ -37,4 +37,5 @@ gcloud alpha compute tpus tpu-vm ssh tpu-test-0 \
        source $HOME/miniconda/bin/activate; \
        conda env create -f environment.yml; \
        conda activate autocurricula; \
+       pip install torch~=2.1.0 torch_xla[tpu]~=2.1.0 torchvision -f https://storage.googleapis.com/libtpu-releases/index.html ;
 ';

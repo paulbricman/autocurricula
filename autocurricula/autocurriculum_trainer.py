@@ -263,11 +263,18 @@ class AutocurriculumTrainer(ABC):
         )
         self.model.pretrained_model.save_pretrained("adapter_params")
 
-        if os.environ.get("PJRT_DEVICE") == "TPU":
+        if os.environ.get("PJRT_DEVICE") == "TPU" or os.environ.get("DEBUG_XLA"):
+            import torch_xla.debug.metrics as met
             import torch_xla.core.xla_model as xm
+
+            print("(*) Pinning model...")
+            print(met.short_metrics_report())
 
             # TODO: Consider self.model.pretrained_model instead.
             self.model.to(xm.xla_device())
+
+            print("(*) Pinned model...")
+            print(met.short_metrics_report())
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model.pretrained_model.config._name_or_path

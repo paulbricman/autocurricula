@@ -1,5 +1,6 @@
 adapter_params/*
 tests/adapter_params/*
+scripts/adapter_params/*
 examples/adapter_params/*
 *.key
 
